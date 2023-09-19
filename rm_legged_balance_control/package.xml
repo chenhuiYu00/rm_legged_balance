@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>rm_legged_balance_control</name>
+    <version>0.0.0</version>
+    <description>The rm_legged_balance_control package</description>
+
+    <maintainer email="yuchen@todo.todo">yuchen</maintainer>
+
+    <license>TODO</license>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <build_depend>cmake_clang_tools</build_depend>
+
+
+    <build_depend>ocs2_core</build_depend>
+    <build_depend>ocs2_ipm</build_depend>
+    <build_depend>ocs2_mpc</build_depend>
+    <build_depend>ocs2_robotic_tools</build_depend>
+    <build_depend>ocs2_sqp</build_depend>
+    <build_export_depend>ocs2_core</build_export_depend>
+    <build_export_depend>ocs2_ipm</build_export_depend>
+    <build_export_depend>ocs2_mpc</build_export_depend>
+    <build_export_depend>ocs2_robotic_tools</build_export_depend>
+    <build_export_depend>ocs2_sqp</build_export_depend>
+    <exec_depend>ocs2_core</exec_depend>
+    <exec_depend>ocs2_ipm</exec_depend>
+    <exec_depend>ocs2_mpc</exec_depend>
+    <exec_depend>ocs2_robotic_tools</exec_depend>
+    <exec_depend>ocs2_sqp</exec_depend>
+
+</package>
