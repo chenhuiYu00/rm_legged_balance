@@ -1,0 +1,6 @@
+<launch>
+    <param name="robot_description" command="$(find xacro)/xacro $(find rm_description)/urdf/balance/balance.urdf.xacro
+         load_chassis:=true
+"/>
+
+</launch>

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>rm_legged_balance_control_ros</name>
+    <version>0.0.0</version>
+    <description>The rm_legged_balance_control_ros package</description>
+
+    <maintainer email="yuchen@todo.todo">yuchen</maintainer>
+
+    <license>TODO</license>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <build_depend>cmake_clang_tools</build_depend>
+
+    <depend>roslib</depend>
+    <depend>robot_state_publisher</depend>
+    <depend>visualization_msgs</depend>
+    <depend>ocs2_ros_interfaces</depend>
+    <depend>controller_interface</depend>
+    <depend>rm_common</depend>
+    <depend>angles</depend>
+    <depend>tf2_ros</depend>
+    <depend>tf2_geometry_msgs</depend>
+    <depend>effort_controllers</depend>
+
+    <depend>rm_legged_balance_control</depend>
+
+    <export>
+        <controller_interface plugin="${prefix}/controllers_plugins.xml"/>
+    </export>
+</package>

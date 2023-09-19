@@ -1,0 +1,10 @@
+<library path="lib/liblegged_balance_controller">
+
+    <class name="rm/LeggedBalanceController" type="rm::LeggedBalanceController"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            The basic legged controller.
+        </description>
+    </class>
+
+</library>
