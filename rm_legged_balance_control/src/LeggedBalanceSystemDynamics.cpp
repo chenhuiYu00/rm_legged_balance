@@ -9,7 +9,7 @@ namespace rm {
 // State = [x, theta, psi, x_dot, theta_dot, psi_dot]^T
 // Input = [tau_l, tau_r]^T
 ad_vector_t LeggedBalanceSystemDynamics::systemFlowMap(ad_scalar_t /*time*/, const ad_vector_t& state, const ad_vector_t& input,
-                                                       const ad_vector_t& /*parameters*/) const {
+                                                       const ad_vector_t& parameters) const {
   // todo: add linear equation
   ad_scalar_t theta = state(1), psi = state(2), x_dot = state(3), theta_dot = state(4), psi_dot = state(5);
   ad_scalar_t m_11 = ad_scalar_t(1);
@@ -61,6 +61,12 @@ ad_vector_t LeggedBalanceSystemDynamics::systemFlowMap(ad_scalar_t /*time*/, con
   result(2) = state(5);
   result.tail(3) = qdd;
   return result;
+}
+
+vector_t LeggedBalanceSystemDynamics::getFlowMapParameters(scalar_t /*time*/, const PreComputation& /* preComputation */) const {
+  vector_t v(2);
+  v << balanceControlCmdPtr_->getPendulumLength()(0), balanceControlCmdPtr_->getPendulumLength()(1);
+  return v;
 }
 
 void LeggedBalanceSystemDynamics::loadDynamicsParams(const std::string& filename) {

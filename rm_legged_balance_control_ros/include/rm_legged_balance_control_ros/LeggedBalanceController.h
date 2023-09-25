@@ -17,6 +17,7 @@
 #include <rm_legged_balance_control/LeggedBalanceInterface.h>
 
 #include "rm_legged_balance_control_ros/LeggedBalanceVisualization.h"
+#include "rm_legged_balance_control_ros/VMC.h"
 
 namespace rm {
 
@@ -75,6 +76,13 @@ class LeggedBalanceController
   // Sit down
   effort_controllers::JointVelocityController leftWheelController_, rightWheelController_;
   control_toolbox::Pid pidFollow_;
+
+  // Leg control
+  scalar_t roll_;
+  control_toolbox::Pid pidLeg_, pidRoll_;
+
+  // VMC
+  std::shared_ptr<VMC> vmc_;
 };
 
 }  // namespace rm

@@ -77,13 +77,15 @@ Q
   scaling 1e+1
 
   (0,0) 0.0   ; px
-  (1,1) 0.0   ; theta
-  (2,2) 0.0   ; alpha
-  (3,3) 100.0 ; psi
-  (4,4) 25.0  ; px_dot
-  (5,5) 0.0   ; theta_dot
-  (6,6) 0.0   ; alpha_dot
-  (7,7) 0.0   ; psi_dot
+  (1,1) 0.0   ; theta_l
+  (2,2) 0.0   ; theta_r
+  (3,3) 0.0   ; alpha
+  (4,4) 100.0 ; psi
+  (5,5) 25.0  ; px_dot
+  (6,6) 0.0   ; theta_l_dot
+  (7,7) 0.0   ; theta_r_dot
+  (8,8) 0.0   ; alpha_dot
+  (9,9) 0.0   ; psi_dot
 }
 
 ; control weight matrix
@@ -123,6 +125,13 @@ Constraint
 {
     power_limit         60          ; [w]
     max_pitch           0.36        ; [rad]
+}
+
+; VMC
+{
+    l_a                0.1          ; [m]
+    l_u                0.1          ; [m]
+    l_d                0.1          ; [m]
 }
 
 

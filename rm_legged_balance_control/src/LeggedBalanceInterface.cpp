@@ -62,7 +62,7 @@ LeggedBalanceInterface::LeggedBalanceInterface(const std::string& taskFile, cons
   // Dynamics
   bool recompileLibraries = false;  // load the flag to generate library files from taskFile
   ocs2::loadData::loadCppDataType(taskFile, "legged_balance_interface.recompileLibraries", recompileLibraries);
-  problem_.dynamicsPtr = std::make_unique<LeggedBalanceSystemDynamics>(taskFile, libraryFolder, recompileLibraries);
+  problem_.dynamicsPtr = std::make_unique<LeggedBalanceSystemDynamics>(taskFile, libraryFolder, recompileLibraries, balanceControlCmdPtr_);
 
   // Rollout
   auto rolloutSettings = ocs2::rollout::loadSettings(taskFile, "rollout");

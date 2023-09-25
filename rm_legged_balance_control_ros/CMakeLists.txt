@@ -72,6 +72,7 @@ target_compile_options(${PROJECT_NAME} PUBLIC ${OCS2_CXX_FLAGS})
 # Controller library
 add_library(legged_balance_controller
         src/LeggedBalanceController.cpp
+        src/VMC.cpp
         )
 add_dependencies(legged_balance_controller
         ${PROJECT_NAME}

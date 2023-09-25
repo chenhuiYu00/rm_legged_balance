@@ -4,6 +4,7 @@
 #pragma once
 #include <ocs2_core/dynamics/SystemDynamicsBaseAD.h>
 
+#include "rm_legged_balance_control/LeggedBalanceControlCmd.h"
 #include "rm_legged_balance_control/LeggedBalanceParameters.h"
 #include "rm_legged_balance_control/definitions.h"
 
@@ -20,7 +21,8 @@ using ocs2::VectorFunctionLinearApproximation;
 
 class LeggedBalanceSystemDynamics final : public SystemDynamicsBaseAD {
  public:
-  LeggedBalanceSystemDynamics(const std::string& filename, const std::string& libraryFolder, bool recompileLibraries)
+  LeggedBalanceSystemDynamics(const std::string& filename, const std::string& libraryFolder, bool recompileLibraries,
+                              std::shared_ptr<LeggedBalanceControlCmd> balanceControlCmdPtr)
       : SystemDynamicsBaseAD() {
     initialize(STATE_DIM, INPUT_DIM, "legged_balance_dynamics", libraryFolder, recompileLibraries, true);
     loadDynamicsParams(filename);
@@ -37,8 +39,14 @@ class LeggedBalanceSystemDynamics final : public SystemDynamicsBaseAD {
 
   void loadDynamicsParams(const std::string& filename);
 
+ protected:
+  // For dynamic pendulum length
+  vector_t getFlowMapParameters(scalar_t time, const PreComputation& preComputation) const override;
+  size_t getNumFlowMapParameters() const override { return 2; }
+
  private:
   LeggedBalanceParameters param_;
+  std::shared_ptr<LeggedBalanceControlCmd> balanceControlCmdPtr_;
 };
 
 }  // namespace rm
