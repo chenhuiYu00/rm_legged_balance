@@ -14,7 +14,7 @@
 #include "rm_legged_balance_control_ros/LeggedBalanceVisualization.h"
 
 int main(int argc, char** argv) {
-  const std::string robotName = "balance";
+  const std::string robotName = "legged_balance";
 
   // task file
   std::vector<std::string> programArgs{};

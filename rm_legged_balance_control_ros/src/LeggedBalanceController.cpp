@@ -51,9 +51,9 @@ bool LeggedBalanceController::init(hardware_interface::RobotHW* robot_hw, ros::N
   jointHandles_.push_back(effortJointInterface->getHandle("left_wheel_joint"));
   jointHandles_.push_back(effortJointInterface->getHandle("right_wheel_joint"));
   jointHandles_.push_back(effortJointInterface->getHandle("left_front_first_leg_joint"));
-  jointHandles_.push_back(effortJointInterface->getHandle("right_front_first_joint"));
-  jointHandles_.push_back(effortJointInterface->getHandle("left_back_first_joint"));
-  jointHandles_.push_back(effortJointInterface->getHandle("right_back_first_joint"));
+  jointHandles_.push_back(effortJointInterface->getHandle("right_front_first_leg_joint"));
+  jointHandles_.push_back(effortJointInterface->getHandle("left_back_first_leg_joint"));
+  jointHandles_.push_back(effortJointInterface->getHandle("right_back_first_leg_joint"));
   imuSensorHandle_ = robot_hw->get<hardware_interface::ImuSensorInterface>()->getHandle("base_imu");
 
   // Odom TF
@@ -243,6 +243,7 @@ void LeggedBalanceController::starting(const ros::Time& time) {
   ocs2::TargetTrajectories targetTrajectories({currentObservation_.time}, {currentObservation_.state}, {currentObservation_.input});
   targetTrajectories.stateTrajectory[0](1) = 0.0;
   targetTrajectories.stateTrajectory[0](2) = 0.0;
+  targetTrajectories.stateTrajectory[0](3) = 0.0;
 
   // Set the first observation and command and wait for optimization to finish
   mpcMrtInterface_->setCurrentObservation(currentObservation_);
@@ -324,8 +325,8 @@ void LeggedBalanceController::updateTfOdom(const ros::Time& time, const ros::Dur
   position(0) = odom2base_.transform.translation.x;
   position(1) = odom2base_.transform.translation.y;
 
-  position(0) += currentObservation_.state(4) * period.toSec() * cos(currentObservation_.state(2));
-  position(1) += currentObservation_.state(4) * period.toSec() * sin(currentObservation_.state(2));
+  position(0) += currentObservation_.state(5) * period.toSec() * cos(currentObservation_.state(4));
+  position(1) += currentObservation_.state(5) * period.toSec() * sin(currentObservation_.state(4));
   position(2) = params_.r_;
 
   odom2base_.header.stamp = time;
@@ -376,8 +377,8 @@ void LeggedBalanceController::normal(const ros::Time& time, const ros::Duration&
   F_bl = J * p;
 
   matrix_t left_eff, right_eff;
-  left_eff = vmc_->pendulumEff2JointEff(F_bl(0), optimizedInput(0), jointPos(2), jointPos(4));
-  right_eff = vmc_->pendulumEff2JointEff(F_bl(1), optimizedInput(1), jointPos(3), jointPos(5));
+  left_eff = vmc_->pendulumEff2JointEff(F_bl(0), optimizedInput(0), jointPos(2) - 3.48, jointPos(4) + 3.48);  // todo: zero point
+  right_eff = vmc_->pendulumEff2JointEff(F_bl(1), optimizedInput(1), jointPos(3) - 3.48, jointPos(5) + 3.48);
 
   // Tracking
   scalar_t kp = 0., kd = 1.0;

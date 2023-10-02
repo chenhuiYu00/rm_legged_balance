@@ -103,8 +103,7 @@ R
 Dynamics
 {
   d                     0.419       ; [m]
-  l_1                   0.08248     ; [m]
-  l_2                   0.08248     ; [m]
+  l_c                   0.03        ; [m]
   r                     0.125       ; [m]
   massBody              13.14       ; [kg]
   massLeg               13.14       ; [kg]
@@ -128,6 +127,7 @@ Constraint
 }
 
 ; VMC
+VMC
 {
     l_a                0.1          ; [m]
     l_u                0.1          ; [m]

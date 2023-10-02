@@ -20,15 +20,16 @@ void LeggedBalanceVisualization::update(const ocs2::SystemObservation& observati
 
   scalar_t vel = observation.state(3);
   scalar_t dt = observation.time - lastObservation_.time;
-  position_(0) += vel * dt * cos(observation.state(2));
-  position_(1) += vel * dt * sin(observation.state(2));
+  position_(0) += vel * dt * cos(observation.state(4));
+  position_(1) += vel * dt * sin(observation.state(4));
   lastObservation_ = observation;
 
   // todo: leg tf
+  scalar_t l_1 = 0.2;
   tf::Transform transform;
-  transform.setOrigin(tf::Vector3(position_(0) + param_.l_1 * sin(observation.state(1)) * cos(observation.state(3)),
-                                  position_(1) + param_.l_1 * sin(observation.state(1)) * sin(observation.state(3)),
-                                  param_.l_1 * cos(observation.state(1)) + param_.r_));
+  transform.setOrigin(tf::Vector3(position_(0) + l_1 * sin(observation.state(1)) * cos(observation.state(3)),
+                                  position_(1) + l_1 * sin(observation.state(1)) * sin(observation.state(3)),
+                                  l_1 * cos(observation.state(1)) + param_.r_));
   tf::Quaternion q = tf::createQuaternionFromRPY(0, observation.state(1), observation.state(3));
   transform.setRotation(q);
   odomTransform_ = transform;
@@ -36,7 +37,7 @@ void LeggedBalanceVisualization::update(const ocs2::SystemObservation& observati
   if (isDummy_) {  // for dummy node visualization
     tfBroadcaster_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "odom", "base_link"));
 
-    transform.setOrigin(tf::Vector3(0, param_.d_ / 2, -param_.l_1));
+    transform.setOrigin(tf::Vector3(0, param_.d_ / 2, -l_1));
     transform.setRotation(tf::createQuaternionFromRPY(
         0, observation.state(0) / param_.r_ - observation.state(1) - observation.state(2) * param_.d_ / 2 / param_.r_, 0));
     tfBroadcaster_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "left_wheel"));

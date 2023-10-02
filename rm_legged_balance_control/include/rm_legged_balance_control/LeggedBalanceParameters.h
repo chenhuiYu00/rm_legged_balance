@@ -18,10 +18,8 @@ struct LeggedBalanceParameters {
   //  }
   // Distance between the two wheels
   scalar_t d_ = 0.419;  // [m]
-  // Distance of wheel axle to shoulder axle
-  scalar_t l_1 = 0.08248;  // [m]
   // Distance of shoulder axle to center of mass
-  scalar_t l_2 = 0.08248;  // [m]
+  scalar_t l_c = 0.03;  // [m]
   // Wheel radius
   scalar_t r_ = 0.125;  // [m]
   // Mass of the pendulum body (except wheels and legs) [kg]
