@@ -23,7 +23,7 @@ class LeggedBalanceSystemDynamics final : public SystemDynamicsBaseAD {
  public:
   LeggedBalanceSystemDynamics(const std::string& filename, const std::string& libraryFolder, bool recompileLibraries,
                               std::shared_ptr<LeggedBalanceControlCmd> balanceControlCmdPtr)
-      : SystemDynamicsBaseAD() {
+      : SystemDynamicsBaseAD(), balanceControlCmdPtr_(std::move(balanceControlCmdPtr)) {
     initialize(STATE_DIM, INPUT_DIM, "legged_balance_dynamics", libraryFolder, recompileLibraries, true);
     loadDynamicsParams(filename);
   }
