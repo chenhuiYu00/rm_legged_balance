@@ -12,10 +12,10 @@ VMC::VMC(ocs2::scalar_t l_a, ocs2::scalar_t l_u, ocs2::scalar_t l_d) {
 
 ocs2::matrix_t VMC::pendulumEff2JointEff(ocs2::scalar_t F_bl, ocs2::scalar_t T_bl, ocs2::scalar_t front_joint_angle,
                                          ocs2::scalar_t back_joint_angle) const {
-  ocs2::scalar_t xe(0), ye(0), x1(0), y1(0), x2(0), y2(0), e(0);
+  ocs2::scalar_t xe, ye, x1, y1, x2, y2, e;
   ocs2::matrix_t joint(2, 1), virtual_eff(2, 1);
   ocs2::scalar_t l(0), theta(0);
-  ocs2::matrix_t J(2, 2);
+  ocs2::matrix_t J(2, 2), J_inv(2, 2), J_inv_T(2, 2);
   ocs2::scalar_t j11(0), j12(0), j21(0), j22(0);
 
   x1 = l_a_ - l_u_ * cos(front_joint_angle);
@@ -44,9 +44,15 @@ ocs2::matrix_t VMC::pendulumEff2JointEff(ocs2::scalar_t F_bl, ocs2::scalar_t T_b
   j22 = l / l_u_ * ((xe - x2) * cos(theta) - (ye - y2) * sin(theta)) /
         ((xe - x2) * sin(back_joint_angle) + (ye - y2) * cos(back_joint_angle));
 
-  J << j11, j21, j12, j22;
-  virtual_eff << ocs2::scalar_t(F_bl), ocs2::scalar_t(T_bl);
-  joint = J * virtual_eff;
+  J << j11, j12, j21, j22;
+  ocs2::scalar_t det = j11 * j22 - j12 * j21;
+  J_inv = 1 / det * (ocs2::matrix_t(2, 2) << j22, -j12, -j21, j22).finished();
+  J_inv_T = (ocs2::matrix_t(2, 2) << J_inv(0, 0), J_inv(1, 0), J_inv(0, 1), J_inv(1, 1)).finished();
+
+  virtual_eff << F_bl, T_bl;
+  joint = J_inv_T * virtual_eff;
+
+  joint(0) = -joint(0);
 
   return joint;
 }
