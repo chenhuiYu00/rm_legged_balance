@@ -8,4 +8,5 @@
 namespace rm {
 constexpr size_t STATE_DIM = 10;
 constexpr size_t INPUT_DIM = 4;
+constexpr size_t CONTROL_DIM = 6;
 }  // namespace rm
