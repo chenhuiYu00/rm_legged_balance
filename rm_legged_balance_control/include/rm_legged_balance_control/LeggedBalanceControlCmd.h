@@ -20,22 +20,24 @@ class LeggedBalanceControlCmd {
   void setSitDown(bool sitDown) { sitDown_ = sitDown; }
   void setForwardVel(scalar_t forwardVel) { forwardVel_ = forwardVel; }
   void setYawError(scalar_t yawError) { yawError_ = yawError; }
-  void setPendulumLength(ocs2::matrix_t length) { pendulumLength_ = length; }
+  void setPendulumLength(ocs2::vector_t length) { pendulumLength_ = length; }
   void setBodyRoll(scalar_t roll) { bodyRoll_ = roll; }
+  void setLegCmd(scalar_t cmd) { legCmd_ = cmd; };
 
   scalar_t getPowerLimit() const { return powerLimit_; }
   scalar_t getMaxPitch() const { return maxPitch_; }
   scalar_t getLastMaxPitch() const { return lastMaxPitch_; }
   scalar_t getMaxPitchSetTime() const { return maxPitchSetTime_; }
-  ocs2::matrix_t getPendulumLength() { return pendulumLength_; }
+  ocs2::vector_t getPendulumLength() { return pendulumLength_; }
   scalar_t getBodyRoll() { return bodyRoll_; }
   bool getSitDown() const { return sitDown_; }
   scalar_t getForwardVel() { return forwardVel_; }
   scalar_t getYawError() { return yawError_; }
+  scalar_t getLegCmd() { return legCmd_; }
 
  private:
-  scalar_t powerLimit_, maxPitch_, lastMaxPitch_, maxPitchSetTime_, bodyRoll_;
-  ocs2::matrix_t pendulumLength_;
+  scalar_t powerLimit_, maxPitch_, lastMaxPitch_, maxPitchSetTime_, bodyRoll_, legCmd_;
+  ocs2::vector_t pendulumLength_;
   bool sitDown_;
   scalar_t forwardVel_, yawError_;
 };

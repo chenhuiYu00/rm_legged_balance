@@ -25,7 +25,8 @@ ad_vector_t LeggedBalanceSystemDynamics::systemFlowMap(ad_scalar_t /*time*/, con
 vector_t LeggedBalanceSystemDynamics::getFlowMapParameters(scalar_t /*time*/, const PreComputation& /* preComputation */) const {
   vector_t v(2);
   // Left pendulum length # Right pendulum length
-  v << balanceControlCmdPtr_->getPendulumLength()(0), balanceControlCmdPtr_->getPendulumLength()(1);
+  v[0] = balanceControlCmdPtr_->getPendulumLength()[0];
+  v[1] = balanceControlCmdPtr_->getPendulumLength()[1];
   return v;
 }
 

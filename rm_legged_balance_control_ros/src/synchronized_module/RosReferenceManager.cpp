@@ -4,8 +4,8 @@
 #include "rm_legged_balance_control_ros/synchronized_module/RosReferenceManager.h"
 
 #include <angles/angles.h>
-#include <rm_legged_balance_control/definitions.h>
 #include <rm_common/ori_tool.h>
+#include <rm_legged_balance_control/definitions.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 namespace rm {
@@ -73,8 +73,8 @@ void RosReferenceManager::preSolverRun(ocs2::scalar_t initTime, ocs2::scalar_t f
         targetState(0) = initState(0) + vel.x * horizon;
         targetState(3) = vel.x;
         timeTrajectory = {initTime, finalTime};
-        stateTrajectory.assign(2, targetState);
-        inputTrajectory.assign(2, vector_t::Zero(INPUT_DIM));
+        stateTrajectory.assign(4, targetState);
+        inputTrajectory.assign(4, vector_t::Zero(INPUT_DIM));
         referenceManagerPtr_->setTargetTrajectories({timeTrajectory, stateTrajectory, inputTrajectory});
         balanceControlCmdPtr_->setForwardVel(vel.x);
       }
@@ -96,6 +96,12 @@ void RosReferenceManager::preSolverRun(ocs2::scalar_t initTime, ocs2::scalar_t f
     balanceControlCmdPtr_->setPowerLimit(chassisCmd_.power_limit);
   }
 
+  if (legCmdUpdated_) {
+    std::lock_guard<std::mutex> lock(legCmdMutex_);
+    legCmdUpdated_ = false;
+    balanceControlCmdPtr_->setLegCmd(legCmd_.data);
+  }
+
   referenceManagerPtr_->preSolverRun(initTime, finalTime, initState);
 }
 
@@ -115,6 +121,14 @@ void RosReferenceManager::subscribe(ros::NodeHandle& nodeHandle) {
     chassisCmd_ = *msg;
   };
   chassisCmdSubscriber_ = nodeHandle.subscribe<rm_msgs::ChassisCmd>("/cmd_chassis", 1, chassisCmdCallback);
+
+  // Leg length command
+  auto legCmdCallback = [this](const std_msgs::Float64ConstPtr& msg) {
+    std::lock_guard<std::mutex> lock(legCmdMutex_);
+    legCmdUpdated_ = true;
+    legCmd_ = *msg;
+  };
+  legCmdSubscriber_ = nodeHandle.subscribe<std_msgs::Float64>("leg_command", 1, legCmdCallback);
 }
 
 bool RosReferenceManager::tfVel(std::string from, std::string to, geometry_msgs::Vector3& vel) {

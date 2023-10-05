@@ -28,11 +28,13 @@ bool LeggedBalanceController::init(hardware_interface::RobotHW* robot_hw, ros::N
 
   balanceInterface_ = std::make_shared<rm::LeggedBalanceInterface>(taskFile, libFolder);
 
-  ocs2::scalar_t l_a, l_u, l_d;
+  ocs2::scalar_t l_a, l_u, l_d, leg_0;
   ocs2::loadData::loadCppDataType(taskFile, "VMC.l_a", l_a);
   ocs2::loadData::loadCppDataType(taskFile, "VMC.l_u", l_u);
   ocs2::loadData::loadCppDataType(taskFile, "VMC.l_d", l_d);
+  ocs2::loadData::loadCppDataType(taskFile, "VMC.leg_0", leg_0);
   vmc_ = std::make_shared<VMC>(l_a, l_u, l_d);
+  balanceInterface_->getLeggedBalanceControlCmd()->setLegCmd(leg_0);
 
   setupMpc(controller_nh);
   setupMrt();
@@ -91,7 +93,6 @@ bool LeggedBalanceController::init(hardware_interface::RobotHW* robot_hw, ros::N
 void LeggedBalanceController::update(const ros::Time& time, const ros::Duration& period) {
   // State Estimate
   updateStateEstimation(time, period);
-
   // Update the current state of the system
   mpcMrtInterface_->setCurrentObservation(currentObservation_);
 
@@ -132,6 +133,7 @@ void LeggedBalanceController::update(const ros::Time& time, const ros::Duration&
    */
 
   // Power limit
+  /*
   double limit = balanceInterface_->getLeggedBalanceControlCmd()->getPowerLimit();
   double a = 0., b = 0., c = 0.;  // Three coefficients of a quadratic equation in one variable
   for (const auto& joint : jointHandles_) {
@@ -147,9 +149,10 @@ void LeggedBalanceController::update(const ros::Time& time, const ros::Duration&
   for (auto joint : jointHandles_) {
     joint.setCommand(zoom > 1 ? joint.getCommand() : joint.getCommand() * zoom);
   }
+   */
 
   // Visualization
-  visualizer_->update(currentObservation_, mpcMrtInterface_->getPolicy(), mpcMrtInterface_->getCommand());
+  // visualizer_->update(currentObservation_, mpcMrtInterface_->getPolicy(), mpcMrtInterface_->getCommand());
 
   updateTfOdom(time, period);
 
@@ -158,8 +161,8 @@ void LeggedBalanceController::update(const ros::Time& time, const ros::Duration&
 }
 
 void LeggedBalanceController::updateStateEstimation(const ros::Time& time, const ros::Duration& period) {
-  vector_t jointPos(INPUT_DIM), jointVel(INPUT_DIM);
-  for (size_t i = 0; i < INPUT_DIM; ++i) {
+  vector_t jointPos(CONTROL_DIM), jointVel(CONTROL_DIM);
+  for (size_t i = 0; i < CONTROL_DIM; ++i) {
     jointPos(i) = jointHandles_[i].getPosition();
     jointVel(i) = jointHandles_[i].getVelocity();
   }
@@ -195,49 +198,42 @@ void LeggedBalanceController::updateStateEstimation(const ros::Time& time, const
   scalar_t roll = 0, pitch = 0, yaw = 0;
   quatToRPY(toMsg(odom2base).rotation, roll_, pitch, yaw);
 
-  try {
-    scalar_t pitchUnsed = 0;
-    odom2base_ = robotStateHandle_.lookupTransform("odom", "base_link", ros::Time(0));
-    //    if (abs((odom2base_.header.stamp - time).toSec()) < 0.001) {
-    quatToRPY(odom2base_.transform.rotation, roll, pitchUnsed, yaw);
-    //    }
-  } catch (tf2::TransformException& ex) {
-  }
+  //  try {
+  //    scalar_t pitchUnsed = 0;
+  //    odom2base_ = robotStateHandle_.lookupTransform("odom", "base_link", ros::Time(0));
+  //    //    if (abs((odom2base_.header.stamp - time).toSec()) < 0.001) {
+  //    quatToRPY(odom2base_.transform.rotation, roll, pitchUnsed, yaw);
+  //    //    }
+  //  } catch (tf2::TransformException& ex) {
+  //  }
 
   currentObservation_.time += period.toSec();
-  scalar_t yawLast = currentObservation_.state(3);
+  scalar_t yawLast = currentObservation_.state(4);
+  ocs2::matrix_t left(4, 1), right(4, 1);
+  left = vmc_->jointPos2Pendulum(3.78 - jointPos[2], 3.78 + jointPos[4], -jointVel[2], -jointVel[4]);
+  right = vmc_->jointPos2Pendulum(3.78 - jointPos[3], 3.78 + jointPos[5], -jointVel[3], -jointVel[5]);
 
-  ocs2::matrix_t left, right;
-  left = vmc_->jointPos2Pendulum(jointPos[2], jointPos[4], jointVel[2], jointVel[4]);
-  right = vmc_->jointPos2Pendulum(jointPos[3], jointPos[5], jointVel[3], jointVel[5]);
-
-  // need?
-  //  if (jointPos[4] < jointPos[2]) {
-  //    left(1) = -left(1);
-  //  }
-  //  if (jointPos[5] < jointPos[3]) {
-  //    right(1) = -right(1);
-  //  }
-
-  ocs2::matrix_t pendulumLength(2, 1);
-  pendulumLength << left(0), right(0);
+  ocs2::vector_t pendulumLength(2);
+  pendulumLength[0] = left(0);
+  pendulumLength[1] = right(0);
   balanceInterface_->getLeggedBalanceControlCmd()->setPendulumLength(pendulumLength);
 
-  currentObservation_.state(10) = (jointVel(1) - jointVel(0)) / params_.d_ * params_.r_;
-  currentObservation_.state(9) = gyro.y;
-  currentObservation_.state(8) = right(3);
-  currentObservation_.state(7) = left(3);
-  currentObservation_.state(6) = (jointVel(0) + jointVel(1) + 2 * currentObservation_.state(4)) / 2. * params_.r_;
-  currentObservation_.state(5) = yawLast + angles::shortest_angular_distance(yawLast, yaw);
-  currentObservation_.state(4) = pitch;
-  currentObservation_.state(3) = right(1);
-  currentObservation_.state(2) = left(1);
-  currentObservation_.state(1) = currentObservation_.state(0) += currentObservation_.state(3) * period.toSec();
+  currentObservation_.state(9) = (jointVel(1) - jointVel(0)) / params_.d_ * params_.r_;
+  currentObservation_.state(8) = gyro.y;
+  currentObservation_.state(7) = right(3);
+  currentObservation_.state(6) = left(3);
+  currentObservation_.state(5) =
+      (jointVel(0) + jointVel(1) + (currentObservation_.state(6) + currentObservation_.state(7))) / 2. * params_.r_;
+  currentObservation_.state(4) = yawLast + angles::shortest_angular_distance(yawLast, yaw);
+  currentObservation_.state(3) = pitch;
+  currentObservation_.state(2) = right(1) + pitch;
+  currentObservation_.state(1) = left(1) + pitch;
+  currentObservation_.state(0) = currentObservation_.state(0) += currentObservation_.state(3) * period.toSec();
 }
 
 void LeggedBalanceController::starting(const ros::Time& time) {
   updateStateEstimation(time, ros::Duration(0.001));
-  currentObservation_.state(1) = 0;  // Why is this needed?
+  // currentObservation_.state(1) = 0;  // Why is this needed?
   currentObservation_.input.setZero(INPUT_DIM);
 
   ocs2::TargetTrajectories targetTrajectories({currentObservation_.time}, {currentObservation_.state}, {currentObservation_.input});
@@ -270,7 +266,7 @@ LeggedBalanceController::~LeggedBalanceController() {
 }
 
 void LeggedBalanceController::setupMpc(ros::NodeHandle& nh) {
-  const std::string robotName = "balance";
+  const std::string robotName = "legged_balance";
 
   // ROS ReferenceManager
   auto rosReferenceManagerPtr = std::make_shared<rm::RosReferenceManager>(balanceInterface_->getReferenceManagerPtr(),
@@ -343,8 +339,8 @@ void LeggedBalanceController::normal(const ros::Time& time, const ros::Duration&
     ROS_INFO("[balance] Enter BLOCK");
     blockStateChanged_ = false;
   }
-  vector_t jointPos(INPUT_DIM), jointVel(INPUT_DIM);
-  for (size_t i = 0; i < INPUT_DIM; ++i) {
+  vector_t jointPos(CONTROL_DIM), jointVel(CONTROL_DIM);
+  for (size_t i = 0; i < CONTROL_DIM; ++i) {
     jointPos(i) = jointHandles_[i].getPosition();
     jointVel(i) = jointHandles_[i].getVelocity();
   }
@@ -368,18 +364,17 @@ void LeggedBalanceController::normal(const ros::Time& time, const ros::Duration&
   legLength = (balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(0) +
                balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(1)) /
               2;
-  F_roll = pidRoll_.computeCommand(0 - roll_, period);      // todo: dynamic roll angle
-  F_leg = pidLeg_.computeCommand(0.2 - legLength, period);  // todo: dynamic leg length
-  F_gravity = (1 / 2 * params_.massBody_) * params_.g_;
-  F_inertial = (1 / 2 * params_.massBody_) * legLength / (2 * params_.d_) * optimizedState(5) * optimizedState(9);
+  F_roll = pidRoll_.computeCommand(0 - roll_, period);  // todo: dynamic roll angle
+  F_leg = pidLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() - legLength, period);
+  F_gravity = (1. / 2 * params_.massBody_) * params_.g_;
+  F_inertial = (1. / 2 * params_.massBody_) * legLength / (2 * params_.d_) * optimizedState(5) * optimizedState(9);
   p << F_roll, F_leg, F_gravity, F_inertial;
 
   F_bl = J * p;
 
   matrix_t left_eff, right_eff;
-  left_eff = vmc_->pendulumEff2JointEff(F_bl(0), optimizedInput(0), jointPos(2) - 3.48, jointPos(4) + 3.48);  // todo: zero point
-  right_eff = vmc_->pendulumEff2JointEff(F_bl(1), optimizedInput(1), jointPos(3) - 3.48, jointPos(5) + 3.48);
-
+  left_eff = vmc_->pendulumEff2JointEff(F_bl(0), optimizedInput(2), 3.78 - jointPos(2), 3.78 + jointPos(4));
+  right_eff = vmc_->pendulumEff2JointEff(F_bl(1), optimizedInput(3), 3.78 - jointPos(3), 3.78 + jointPos(5));
   // Tracking
   scalar_t kp = 0., kd = 1.0;
   scalar_t leftWheelPosRef =
@@ -395,10 +390,12 @@ void LeggedBalanceController::normal(const ros::Time& time, const ros::Duration&
                               kd * (leftWheelVelRef - jointHandles_[0].getVelocity()) + optimizedInput(0));
   jointHandles_[1].setCommand(kp * (rightWheelPosRef - jointHandles_[1].getPosition()) +
                               kd * (rightWheelVelRef - jointHandles_[1].getVelocity()) + optimizedInput(1));
-  jointHandles_[3].setCommand(left_eff(0));
-  jointHandles_[4].setCommand(right_eff(0));
-  jointHandles_[5].setCommand(left_eff(1));
-  jointHandles_[6].setCommand(right_eff(1));
+  jointHandles_[0].setCommand(optimizedInput(0));
+  jointHandles_[1].setCommand(optimizedInput(1));
+  jointHandles_[2].setCommand(left_eff(0));
+  jointHandles_[3].setCommand(right_eff(0));
+  jointHandles_[4].setCommand(left_eff(1));
+  jointHandles_[5].setCommand(right_eff(1));
 }
 
 void LeggedBalanceController::block(const ros::Time& time, const ros::Duration& period) {

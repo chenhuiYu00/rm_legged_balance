@@ -129,9 +129,11 @@ Constraint
 ; VMC
 VMC
 {
-    l_a                0.1          ; [m]
-    l_u                0.1          ; [m]
-    l_d                0.1          ; [m]
+    l_a                0.054         ; [m]
+    l_u                0.15          ; [m]
+    l_d                0.25          ; [m]
+
+    leg_0              0.2           ; [m] Initial pendulum length
 }
 
 
