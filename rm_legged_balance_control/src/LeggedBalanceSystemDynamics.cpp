@@ -49,31 +49,48 @@ void LeggedBalanceSystemDynamics::loadDynamicsParams(const std::string& filename
 ocs2::ad_matrix_t LeggedBalanceSystemDynamics::generateA(ad_scalar_t l_l, ad_scalar_t l_r) const {
   // Polynomial fitting
   ad_scalar_t O = ad_scalar_t(0);
-  ad_scalar_t a_12 = ad_scalar_t(1), a_34 = ad_scalar_t(1), a_56 = ad_scalar_t(1), a_78 = ad_scalar_t(1), a_910 = ad_scalar_t(1);
-  ad_scalar_t a_25 = 1.556 - 24.58 * l_l - 0.08178 * l_r - 15.16 * l_l * l_l - 1.048 * l_l * l_r + 0.1123 * l_r * l_r;
-  ad_scalar_t a_27 = 1.556 - 0.08178 * l_l - 24.58 * l_r + 0.1123 * l_l * l_l - 1.048 * l_l * l_r - 15.16 * l_r * l_r;
-  ad_scalar_t a_45 = 0.3376 - 6.09 * l_l + 0.01922 * l_r - 2.845 * l_l * l_l + 0.2355 * l_l * l_r - 0.02613 * l_r * l_r;
-  ad_scalar_t a_47 = -0.3376 - 0.01922 * l_l + 6.09 * l_r + 0.2613 * l_l * l_l - 0.2355 * l_l * l_r + 2.845 * l_r * l_r;
-  ad_scalar_t a_65 = 7.991 + 286.6 * l_l + 0.005895 * l_r - 434.2 * l_l * l_l + 0.04345 * l_l * l_r - 0.008873 * l_r * l_r;
-  ad_scalar_t a_67 = -0.02577 + 0.1381 * l_l + 3.643 * l_r - 0.412 * l_l * l_l - 0.7317 * l_l * l_r - 2.644 * l_r * l_r;
-  ad_scalar_t a_85 = -0.02577 + 3.643 * l_l + 0.1381 * l_r - 2.644 * l_l * l_l - 0.7317 * l_l * l_r - 0.412 * l_r * l_r;
-  ad_scalar_t a_87 = 7.991 + 0.005895 * l_l + 286.6 * l_r - 0.008873 * l_l * l_l + 0.04345 * l_l * l_r - 434.2 * l_r * l_r;
-  ad_scalar_t a_105 = 0.1876 - 9.279 * l_l - 0.0184 * l_r + 3.627 * l_l * l_l - 0.1974 * l_l * l_r + 0.02865 * l_r * l_r;
-  ad_scalar_t a_107 = 0.1876 - 0.0184 * l_l - 9.279 * l_r + 0.2865 * l_l * l_l - 0.1974 * l_l * l_r + 3.627 * l_r * l_r;
-  ad_scalar_t a_109 = ad_scalar_t(555219 / 30700.);
+  ad_scalar_t a_16 = ad_scalar_t(1), a_27 = ad_scalar_t(1), a_38 = ad_scalar_t(1), a_49 = ad_scalar_t(1), a_510 = ad_scalar_t(1);
+  ad_scalar_t a_62 =
+      -0.03218 - 0.11809246 * l_l - 0.08837277 * l_r + 0.08147009 * l_l * l_l + 0.01512841 * l_l * l_r + 0.11946842 * l_r * l_r;
+  ad_scalar_t a_63 =
+      -0.016560 + 0.00484958 * l_l - 0.064722 * l_r - 0.00457059 * l_l * l_l + 0.01565593 * l_l * l_r + 0.01267579 * l_r * l_r;
+  ad_scalar_t a_64 =
+      -0.4561021 - 0.1488225 * l_l - 0.19647707 * l_r + 0.09755714 * l_l * l_l + 0.04557856 * l_l * l_r + 0.15340679 * l_r * l_r;
+  ad_scalar_t a_72 =
+      -5.2986744 + 7.16471817 * l_l + 4.71747812 * l_r - 2.89144876 * l_l * l_l - 9.11851375 * l_l * l_r + 1.29256768 * l_r * l_r;
+  ad_scalar_t a_73 =
+      0.0237555 + 0.366526 * l_l - 0.41890653 * l_r - 0.64768334 * l_l * l_l + 0.8430833 * l_l * l_r - 0.14636845 * l_r * l_r;
+  ad_scalar_t a_74 =
+      -5.82844783 + 7.79268178 * l_l + 3.49073496 * l_r - 3.49226094 * l_l * l_l - 7.91481553 * l_l * l_r + 2.15180379 * l_r * l_r;
+  ad_scalar_t a_82 =
+      0.025970435 + 0.38864448 * l_l - 0.44986877 * l_r - 0.25955702 * l_l * l_l + 0.01947447 * l_l * l_r + 0.29290284 * l_r * l_r;
+  ad_scalar_t a_83 =
+      -5.15910343 + -2.01256235e-3 * l_l + 6.82319497 * l_r - 2.0728509e-2 * l_l * l_l + 4.43084507e-2 * l_l * l_r - 5.814509 * l_r * l_r;
+  ad_scalar_t a_84 = -5.38599 - 0.44977 * l_l + 6.255285 * l_r - 0.31738057 * l_l * l_l + 0.10541621 * l_l * l_r - 5.37627405 * l_r * l_r;
+  ad_scalar_t a_92 =
+      0.0507036 + 0.186040 * l_l + 0.13922033 * l_r - 0.12834599 * l_l * l_l - 0.02383292 * l_l * l_r - 0.18820767 * l_r * l_r;
+  ad_scalar_t a_93 =
+      0.0260886 - 0.0076399 * l_l + 0.10196273 * l_r + 0.00720039 * l_l * l_l - 0.02466397 * l_l * l_r - 0.01996913 * l_r * l_r;
+  ad_scalar_t a_94 = 16.157215 + 0.23445098 * l_l + 0.309525 * l_r - 0.15368 * l_l * l_l - 0.07180336 * l_l * l_r - 0.24167335 * l_r * l_r;
+  ad_scalar_t a_102 =
+      0.17629847 + 1.73458918 * l_l - 1.4810232 * l_r - 1.194995 * l_l * l_l + 0.20866224 * l_l * l_r + 0.6922007 * l_r * l_r;
+  ad_scalar_t a_103 =
+      -0.1557644 - 0.01884951 * l_l - 0.5443118 * l_r - 0.0696846 * l_l * l_l + 0.13368658 * l_l * l_r + 0.16891895 * l_r * l_r;
+  ad_scalar_t a_104 =
+      0.02348896 + 2.03423561 * l_l - 2.2203314 * l_r - 1.4573463 * l_l * l_l + 0.50555285 * l_l * l_r + 0.75491052 * l_r * l_r;
 
   ad_matrix_t A = (ad_matrix_t(10, 10) <<  // clang-format off
-                       O,a_12,   O,   O,   O,   O,   O,   O,   O,   O,
-                       O,   O,   O,   O,a_25,   O,a_27,   O,   O,   O,
-                       O,   O,   O,a_34,   O,   O,   O,   O,   O,   O,
-                       O,   O,   O,   O,a_45,   O,a_47,   O,   O,   O,
-                       O,   O,   O,   O,   O,a_56,   O,   O,   O,   O,
-                       O,   O,   O,   O,a_65,   O,a_67,   O,   O,   O,
-                       O,   O,   O,   O,   O,   O,   O,a_78,   O,   O,
-                       O,   O,   O,   O,a_85,   O,a_87,   O,   O,   O,
-                       O,   O,   O,   O,   O,   O,   O,   O,   O,a_910,
-                       O,   O,   O,   O,a_105,  O,a_107,  O,a_109,  O
-                    ).finished();  // clang-format on
+                         O,   O,   O,   O,   O,a_16,   O,   O,   O,   O,
+                         O,   O,   O,   O,   O,   O,a_27,   O,   O,   O,
+                         O,   O,   O,   O,   O,   O,   O,a_38,   O,   O,
+                         O,   O,   O,   O,   O,   O,   O,   O,a_49,   O,
+                         O,   O,   O,   O,   O,   O,   O,   O,   O,a_510,
+                         O,a_62,a_63,a_64,   O,   O,   O,   O,   O,   O,
+                         O,a_72,a_73,a_74,   O,   O,   O,   O,   O,   O,
+                         O,a_82,a_83,a_84,   O,   O,   O,   O,   O,   O,
+                         O,a_92,a_93,a_94,   O,   O,   O,   O,   O,   O,
+                         O,a_102,a_103,a_104,O,   O,   O,   O,   O,   O
+                      ).finished();  // clang-format on
 
   return A;
 }
@@ -81,39 +98,40 @@ ocs2::ad_matrix_t LeggedBalanceSystemDynamics::generateA(ad_scalar_t l_l, ad_sca
 ocs2::ad_matrix_t LeggedBalanceSystemDynamics::generateB(ad_scalar_t l_l, ad_scalar_t l_r) const {
   // Polynomial fitting
   ad_scalar_t O = ad_scalar_t(0);
-  ad_scalar_t b_21 = 1.082 + 9.273 * l_l + 1.047 * l_r + 0.5413 * l_l * l_l + 0.2766 * l_l * l_r - 0.4251 * l_r * l_r;
-  ad_scalar_t b_22 = 1.082 + 1.047 * l_l + 9.278 * l_r - 0.4251 * l_l * l_l + 0.2766 * l_l * l_r + 0.5413 * l_r * l_r;
-  ad_scalar_t b_23 = -0.08052 - 2.891 * l_l - 0.04324 * l_r + 4.375 * l_l * l_l + 0.03729 * l_l * l_r + 0.01381 * l_r * l_r;
-  ad_scalar_t b_24 = -0.08502 - 0.04324 * l_l - 2.891 * l_r + 0.01381 * l_l * l_l + 0.03729 * l_l * l_r + 4.375 * l_r * l_r;
-  ad_scalar_t b_41 = -13.68 + 2.201 * l_l - 0.2399 * l_r + 0.01163 * l_l * l_l - 0.05459 * l_l * l_r + 0.09893 * l_r * l_r;
-  ad_scalar_t b_42 = 13.68 + 0.2399 * l_l - 2.201 * l_r - 0.09893 * l_l * l_l - 0.05459 * l_l * l_r - 0.01163 * l_r * l_r;
-  ad_scalar_t b_43 = -0.03804 - 0.6017 * l_l + 0.009886 * l_r + 0.928 * l_l * l_l - 0.008715 * l_l * l_r - 0.003214 * l_r * l_r;
-  ad_scalar_t b_44 = 0.03804 - 0.009886 * l_l + 0.6017 * l_r + 0.003214 * l_l * l_l + 0.008715 * l_l * l_r - 0.928 * l_r * l_r;
-  ad_scalar_t b_61 = -11.89 - 47.85 * l_l - 0.05541 * l_r + 80.04 * l_l * l_l + 0.0009459 * l_l * l_r + 0.03362 * l_r * l_r;
-  ad_scalar_t b_62 = -2.096 - 0.006312 * l_l - 0.881 * l_r + 1.559 * l_l * l_l + 0.1807 * l_l * l_r + 0.6006 * l_r * l_r;
-  ad_scalar_t b_63 = 11.5 - 37.99 * l_l + 0.002215 * l_r + 48.6 * l_l * l_l - 0.002104 * l_l * l_r - 0.001092 * l_r * l_r;
-  ad_scalar_t b_64 = 0.09802 - 0.006269 * l_l - 0.1583 * l_r - 0.05063 * l_l * l_l + 0.02658 * l_l * l_r + 0.1612 * l_r * l_r;
-  ad_scalar_t b_81 = -2.096 - 0.881 * l_l - 0.006312 * l_r + 0.6006 * l_l * l_l + 0.1807 * l_l * l_r + 1.559 * l_r * l_r;
-  ad_scalar_t b_82 = -11.89 + 0.05541 * l_l - 47.85 * l_r + 0.03362 * l_l * l_l + 0.0009459 * l_l * l_r + 80.04 * l_r * l_r;
-  ad_scalar_t b_83 = 0.09802 - 0.1583 * l_l - 0.006269 * l_r + 0.1612 * l_l * l_l + 0.02658 * l_l * l_r - 0.05063 * l_r * l_r;
-  ad_scalar_t b_84 = 11.5 + 0.002215 * l_l - 37.99 * l_r - 0.001092 * l_l * l_l - 0.002104 * l_l * l_r + 48.6 * l_r * l_r;
-  ad_scalar_t b_101 = -2.578 + 2.578 * l_l + 0.2085 * l_r - 1.117 * l_l * l_l + 0.05208 * l_l * l_r - 0.1085 * l_r * l_r;
-  ad_scalar_t b_102 = -2.572 + 0.2085 * l_l + 2.578 * l_r - 0.1085 * l_l * l_l + 0.05208 * l_l * l_r - 1.117 * l_r * l_r;
-  ad_scalar_t b_103 = -8.335 + 0.005946 * l_l - 0.00851 * l_r + 0.1271 * l_l * l_l + 0.007021 * l_l * l_r + 0.003523 * l_r * l_r;
-  ad_scalar_t b_104 = -8.335 - 0.00851 * l_l + 0.005946 * l_r + 0.003523 * l_l * l_l + 0.007021 * l_l * l_r + 0.1271 * l_r * l_r;
+  ad_scalar_t b_61 = 0.19639 - 0.03374 * l_l + 0.14396 * l_r - 0.01304 * l_l * l_l - 0.06308 * l_l * l_r - 0.1707 * l_r * l_r;
+  ad_scalar_t b_62 = 0.14699 - 0.00116552 * l_l + 0.030625 * l_r + 0.00074787 * l_l * l_l - 0.01067047 * l_l * l_r - 0.029384 * l_r * l_r;
+  ad_scalar_t b_63 = -0.48126 - 0.6427468 * l_l - 0.408710 * l_r + 0.39800877 * l_l * l_l + 0.06777286 * l_l * l_r + 0.422876 * l_r * l_r;
+  ad_scalar_t b_64 = 0.495914 - 0.1144039 * l_l - 0.234377 * l_r + 0.05907991 * l_l * l_l - 0.01663537 * l_l * l_r - 0.073463 * l_r * l_r;
+  ad_scalar_t b_71 = 10.92329 - 27.372703 * l_l - 8.194668 * l_r + 20.7009335 * l_l * l_l + 19.00684 * l_l * l_r - 2.0176599 * l_r * l_r;
+  ad_scalar_t b_72 = 0.092901 - 0.6885225 * l_l + 1.000315 * l_r + 0.85263388 * l_l * l_l - 0.732619 * l_l * l_r - 0.6726392 * l_r * l_r;
+  ad_scalar_t b_73 = -14.4437 + 7.2189129 * l_l + 8.924072 * l_r + 5.63648 * l_l * l_l - 19.44009 * l_l * l_r + 7.532362 * l_r * l_r;
+  ad_scalar_t b_74 = -0.571972 - 6.480518 * l_l + 8.604025 * l_r + 8.38546 * l_l * l_l - 4.495299 * l_l * l_r - 6.313617 * l_r * l_r;
+  ad_scalar_t b_81 = 0.0150799 - 0.637193 * l_l + 0.821757 * l_r + 0.87436 * l_l * l_l - 0.650049 * l_l * l_r - 0.449953 * l_r * l_r;
+  ad_scalar_t b_82 =
+      11.021698 - 1.1473e-2 * l_l - 2.9612e1 * l_r + 3.615209e-2 * l_l * l_l - 7.3457e-02 * l_l * l_r + 2.93378e1 * l_r * l_r;
+  ad_scalar_t b_83 = -0.8934116 + 1.284348 * l_l - 1.59693 * l_r - 0.468298 * l_l * l_l - 0.29046 * l_l * l_r + 1.3832024 * l_r * l_r;
+  ad_scalar_t b_84 = -13.655 + 0.055609 * l_l - 6.032097 * l_r + 0.25345224 * l_l * l_l - 0.62251 * l_l * l_r + 12.064728 * l_r * l_r;
+  ad_scalar_t b_91 = -4.30578 + 0.053165 * l_l - 0.226803 * l_r + 0.02055693 * l_l * l_l + 0.09938 * l_l * l_r + 0.2689769 * l_r * l_r;
+  ad_scalar_t b_92 = -4.22795 + 0.001836 * l_l - 0.0482462 * l_r - 0.00117817 * l_l * l_l + 0.01681 * l_l * l_r + 0.04629 * l_r * l_r;
+  ad_scalar_t b_93 = -0.75816 + 1.012567 * l_l + 0.6438723 * l_r - 0.6270134 * l_l * l_l - 0.10676773 * l_l * l_r - 0.666189 * l_r * l_r;
+  ad_scalar_t b_94 = -0.78125 + 0.180229 * l_l + 0.3692322 * l_r - 0.093073 * l_l * l_l + 0.02620696 * l_l * l_r - 0.115732 * l_r * l_r;
+  ad_scalar_t b_101 = -0.4095269 - 2.319868 * l_l + 2.72256 * l_r + 3.40986 * l_l * l_l - 2.58956 * l_l * l_r - 0.954152 * l_r * l_r;
+  ad_scalar_t b_102 = 0.3904 - 0.039623 * l_l + 0.089357 * l_r + 0.138409 * l_l * l_l - 0.267257 * l_l * l_r - 0.073397 * l_r * l_r;
+  ad_scalar_t b_103 = -4.57234 + 6.309787 * l_l - 4.4699 * l_r - 2.74989 * l_l * l_l - 0.64275015 * l_l * l_r + 1.562874 * l_r * l_r;
+  ad_scalar_t b_104 = 4.671049 + 0.480128 * l_l - 3.81003 * l_r + 0.84256 * l_l * l_l - 2.355031 * l_l * l_r + 2.57757 * l_r * l_r;
 
   ad_matrix_t B = (ad_matrix_t(10, 4) <<  // clang-format off
-                       O,   O,   O,   O,
-                    b_21,b_22,b_23,b_24,
-                       O,   O,   O,   O,
-                    b_41,b_42,b_43,b_44,
-                       O,   O,   O,   O,
-                    b_61,b_62,b_63,b_64,
-                       O,   O,   O,   O,
-                    b_81,b_82,b_83,b_84,
-                       O,   O,   O,   O,
-                    b_101,b_102,b_103,b_104
-                    ).finished();  // clang-format on
+                         O,   O,   O,   O,
+                         O,   O,   O,   O,
+                         O,   O,   O,   O,
+                         O,   O,   O,   O,
+                         O,   O,   O,   O,
+                      b_61,b_62,b_63,b_64,
+                      b_71,b_72,b_73,b_74,
+                      b_81,b_82,b_83,b_84,
+                      b_91,b_92,b_93,b_94,
+                      b_101,b_102,b_103,b_104
+                      ).finished();  // clang-format on
 
   return B;
 }
