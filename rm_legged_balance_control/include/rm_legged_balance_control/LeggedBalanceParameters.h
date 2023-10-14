@@ -25,7 +25,7 @@ struct LeggedBalanceParameters {
   // Mass of the pendulum body (except wheels and legs) [kg]
   scalar_t massBody_ = 13.14;
   // Mass of the leg [kg]
-  scalar_t massLeg_ = 13.14;
+  scalar_t massLeg_ = 0.56;
   // Mass of each wheel [kg]
   scalar_t massWheel_ = 0.465756;
   // Single wheel moment of inertia (MOI) w.r.t. the wheel axis [kg]

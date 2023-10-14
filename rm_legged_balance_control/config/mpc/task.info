@@ -77,14 +77,14 @@ Q
   scaling 1e+1
 
   (0,0) 0.0   ; px
-  (1,1) 0.0   ; theta_l
-  (2,2) 0.0   ; theta_r
-  (3,3) 0.0   ; alpha
+  (1,1) 20.0   ; theta_l
+  (2,2) 20.0   ; theta_r
+  (3,3) 50.0   ; theta
   (4,4) 100.0 ; psi
   (5,5) 25.0  ; px_dot
   (6,6) 0.0   ; theta_l_dot
   (7,7) 0.0   ; theta_r_dot
-  (8,8) 0.0   ; alpha_dot
+  (8,8) 0.0   ; theta_dot
   (9,9) 0.0   ; psi_dot
 }
 
@@ -106,7 +106,7 @@ Dynamics
   l_c                   0.03        ; [m]
   r                     0.125       ; [m]
   massBody              13.14       ; [kg]
-  massLeg               13.14       ; [kg]
+  massLeg               0.56       ; [kg]
   massWheel             0.465756    ; [kg]
   jWheel                0.005773    ; [kg*m^2]
   g                     9.81        ;
