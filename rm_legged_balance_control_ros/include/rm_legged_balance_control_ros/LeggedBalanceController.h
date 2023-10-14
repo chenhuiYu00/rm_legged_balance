@@ -79,7 +79,7 @@ class LeggedBalanceController
 
   // Leg control
   scalar_t roll_;
-  control_toolbox::Pid pidLeg_, pidRoll_;
+  control_toolbox::Pid pidLeftLeg_, pidRightLeg_, pidThetaDiff_, pidRoll_;
 
   // VMC
   std::shared_ptr<VMC> vmc_;

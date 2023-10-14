@@ -77,8 +77,18 @@ bool LeggedBalanceController::init(hardware_interface::RobotHW* robot_hw, ros::N
       return false;
     }
   }
-  if (controller_nh.hasParam("pid_leg")) {
-    if (!pidLeg_.init(ros::NodeHandle(controller_nh, "pid_leg"))) {
+  if (controller_nh.hasParam("pid_left_leg")) {
+    if (!pidLeftLeg_.init(ros::NodeHandle(controller_nh, "pid_left_leg"))) {
+      return false;
+    }
+  }
+  if (controller_nh.hasParam("pid_right_leg")) {
+    if (!pidRightLeg_.init(ros::NodeHandle(controller_nh, "pid_right_leg"))) {
+      return false;
+    }
+  }
+  if (controller_nh.hasParam("pid_theta_diff")) {
+    if (!pidThetaDiff_.init(ros::NodeHandle(controller_nh, "pid_theta_diff"))) {
       return false;
     }
   }
@@ -217,23 +227,25 @@ void LeggedBalanceController::updateStateEstimation(const ros::Time& time, const
   pendulumLength[0] = left(0);
   pendulumLength[1] = right(0);
   balanceInterface_->getLeggedBalanceControlCmd()->setPendulumLength(pendulumLength);
+  // ROS_INFO_THROTTLE(2, "pendulum_len: %f %f", pendulumLength[0], pendulumLength[1]);
 
-  currentObservation_.state(9) = (jointVel(1) - jointVel(0)) / params_.d_ * params_.r_;
+  currentObservation_.state(9) = gyro.z;  // may need change
   currentObservation_.state(8) = gyro.y;
   currentObservation_.state(7) = right(3);
   currentObservation_.state(6) = left(3);
-  currentObservation_.state(5) =
-      (jointVel(0) + jointVel(1) + (currentObservation_.state(6) + currentObservation_.state(7))) / 2. * params_.r_;
+  currentObservation_.state(5) = (jointVel(0) + jointVel(1)) / 2. * params_.r_;
   currentObservation_.state(4) = yawLast + angles::shortest_angular_distance(yawLast, yaw);
   currentObservation_.state(3) = pitch;
   currentObservation_.state(2) = right(1) + pitch;
   currentObservation_.state(1) = left(1) + pitch;
-  currentObservation_.state(0) = currentObservation_.state(0) += currentObservation_.state(3) * period.toSec();
+  currentObservation_.state(0) = currentObservation_.state(0) += currentObservation_.state(5) * period.toSec();
 }
 
 void LeggedBalanceController::starting(const ros::Time& time) {
   updateStateEstimation(time, ros::Duration(0.001));
-  // currentObservation_.state(1) = 0;  // Why is this needed?
+  //  currentObservation_.state(1) = 0;  // Why is this needed?
+  //  currentObservation_.state(2) = 0;
+  //  currentObservation_.state(3) = 0;
   currentObservation_.input.setZero(INPUT_DIM);
 
   ocs2::TargetTrajectories targetTrajectories({currentObservation_.time}, {currentObservation_.state}, {currentObservation_.input});
@@ -356,25 +368,33 @@ void LeggedBalanceController::normal(const ros::Time& time, const ros::Duration&
   currentObservation_.input = optimizedInput;
 
   // Leg control
-  ocs2::matrix_t F_bl(2, 1), J(2, 4), p(4, 1);
-  scalar_t legLength, F_roll, F_leg, F_gravity, F_inertial;
-  J << 1, 1, 1, -1,  // clang-format off
-      -1, 1, 1, 1;  // clang-format on
-
+  ocs2::matrix_t F_bl(2, 1), J(2, 3), p(3, 1), F_leg(2, 1);
+  scalar_t legLength, F_roll, F_gravity, F_inertial;
+  // clang-format off
+  J << 1, 1, -1,
+      -1, 1, 1;
+  // clang-format on
   legLength = (balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(0) +
                balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(1)) /
               2;
   F_roll = pidRoll_.computeCommand(0 - roll_, period);  // todo: dynamic roll angle
-  F_leg = pidLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() - legLength, period);
+  F_leg(0) = pidLeftLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() -
+                                            balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(0),
+                                        period);
+  F_leg(1) = pidLeftLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() -
+                                            balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(1),
+                                        period);
   F_gravity = (1. / 2 * params_.massBody_) * params_.g_;
   F_inertial = (1. / 2 * params_.massBody_) * legLength / (2 * params_.d_) * optimizedState(5) * optimizedState(9);
-  p << F_roll, F_leg, F_gravity, F_inertial;
+  // F_gravity = 0.5;
+  F_inertial = 0;
+  p << F_roll, F_gravity, F_inertial;
+  F_bl = J * p + F_leg;
 
-  F_bl = J * p;
-
+  scalar_t T_theta_diff = pidThetaDiff_.computeCommand(optimizedState(1) - optimizedState(2), period);
   matrix_t left_eff, right_eff;
-  left_eff = vmc_->pendulumEff2JointEff(F_bl(0), optimizedInput(2), 3.78 - jointPos(2), 3.78 + jointPos(4));
-  right_eff = vmc_->pendulumEff2JointEff(F_bl(1), optimizedInput(3), 3.78 - jointPos(3), 3.78 + jointPos(5));
+  left_eff = vmc_->pendulumEff2JointEff(F_bl(0), optimizedInput(0) - T_theta_diff, 3.78 - jointPos(2), 3.78 + jointPos(4));
+  right_eff = vmc_->pendulumEff2JointEff(F_bl(1), optimizedInput(1) + T_theta_diff, 3.78 - jointPos(3), 3.78 + jointPos(5));
   // Tracking
   scalar_t kp = 0., kd = 1.0;
   scalar_t leftWheelPosRef =
@@ -386,12 +406,12 @@ void LeggedBalanceController::normal(const ros::Time& time, const ros::Duration&
   scalar_t rightWheelVelRef =
       optimizedState(3) / params_.r_ - (optimizedState(6) + optimizedState(7)) / 2 + optimizedState(9) * params_.d_ / 2 / params_.r_;
 
-  jointHandles_[0].setCommand(kp * (leftWheelPosRef - jointHandles_[0].getPosition()) +
-                              kd * (leftWheelVelRef - jointHandles_[0].getVelocity()) + optimizedInput(0));
-  jointHandles_[1].setCommand(kp * (rightWheelPosRef - jointHandles_[1].getPosition()) +
-                              kd * (rightWheelVelRef - jointHandles_[1].getVelocity()) + optimizedInput(1));
-  jointHandles_[0].setCommand(optimizedInput(0));
-  jointHandles_[1].setCommand(optimizedInput(1));
+  //  jointHandles_[0].setCommand(kp * (leftWheelPosRef - jointHandles_[0].getPosition()) +
+  //                              kd * (leftWheelVelRef - jointHandles_[0].getVelocity()) + optimizedInput(0));
+  //  jointHandles_[1].setCommand(kp * (rightWheelPosRef - jointHandles_[1].getPosition()) +
+  //                              kd * (rightWheelVelRef - jointHandles_[1].getVelocity()) + optimizedInput(1));
+  jointHandles_[0].setCommand(optimizedInput(2));
+  jointHandles_[1].setCommand(optimizedInput(3));
   jointHandles_[2].setCommand(left_eff(0));
   jointHandles_[3].setCommand(right_eff(0));
   jointHandles_[4].setCommand(left_eff(1));
