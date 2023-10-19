@@ -18,16 +18,16 @@ class TorqueConstraint : public ocs2::StateInputConstraint {
 
   vector_t getValue(scalar_t time, const vector_t& /*state*/, const vector_t& input, const PreComputation& /*preComp*/) const override {
     vector_t ret(getNumConstraints(time));
-    scalar_t wheel_limit = 9.473, leg_limit = 9.473;
+    scalar_t wheel_limit = 9.473, leg_limit = 20;
     // clang-format off
-    ret << input(0) + wheel_limit,
-          -input(0) + wheel_limit,
-           input(1) + wheel_limit,
-          -input(1) + wheel_limit,
-           input(2) + leg_limit,
-          -input(2) + leg_limit,
-           input(3) + leg_limit,
-          -input(3) + leg_limit;
+    ret << input(0) + leg_limit,
+          -input(0) + leg_limit,
+           input(1) + leg_limit,
+          -input(1) + leg_limit,
+           input(2) + wheel_limit,
+          -input(2) + wheel_limit,
+           input(3) + wheel_limit,
+          -input(3) + wheel_limit;
     // clang-format on
     return ret;
   }
