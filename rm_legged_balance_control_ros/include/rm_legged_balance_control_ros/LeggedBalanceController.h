@@ -10,6 +10,7 @@
 #include <hardware_interface/joint_command_interface.h>
 #include <rm_common/hardware_interface/robot_state_interface.h>
 #include <rm_common/tf_rt_broadcaster.h>
+#include <std_msgs/Float64MultiArray.h>
 
 #include <ocs2_core/misc/Benchmark.h>
 #include <ocs2_mpc/MPC_MRT_Interface.h>
@@ -18,6 +19,9 @@
 
 #include "rm_legged_balance_control_ros/LeggedBalanceVisualization.h"
 #include "rm_legged_balance_control_ros/VMC.h"
+#include "rm_legged_balance_control_ros/vmc/leg_conv.h"
+#include "rm_legged_balance_control_ros/vmc/leg_pos.h"
+#include "rm_legged_balance_control_ros/vmc/leg_spd.h"
 
 namespace rm {
 
@@ -80,6 +84,7 @@ class LeggedBalanceController
   // Leg control
   scalar_t roll_;
   control_toolbox::Pid pidLeftLeg_, pidRightLeg_, pidThetaDiff_, pidRoll_;
+  ros::Publisher legLengthPublisher_, legPendulumSupportForce_;
 
   // VMC
   std::shared_ptr<VMC> vmc_;
