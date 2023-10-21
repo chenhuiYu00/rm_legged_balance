@@ -27,14 +27,7 @@ bool LeggedBalanceController::init(hardware_interface::RobotHW* robot_hw, ros::N
   controller_nh.getParam("/libFolder", libFolder);
 
   balanceInterface_ = std::make_shared<rm::LeggedBalanceInterface>(taskFile, libFolder);
-
-  ocs2::scalar_t l_a, l_u, l_d, leg_0;
-  ocs2::loadData::loadCppDataType(taskFile, "VMC.l_a", l_a);
-  ocs2::loadData::loadCppDataType(taskFile, "VMC.l_u", l_u);
-  ocs2::loadData::loadCppDataType(taskFile, "VMC.l_d", l_d);
-  ocs2::loadData::loadCppDataType(taskFile, "VMC.leg_0", leg_0);
-  vmc_ = std::make_shared<VMC>(l_a, l_u, l_d);
-  balanceInterface_->getLeggedBalanceControlCmd()->setLegCmd(leg_0);
+  balanceInterface_->getLeggedBalanceControlCmd()->setLegCmd(0.12);
 
   setupMpc(controller_nh);
   setupMrt();

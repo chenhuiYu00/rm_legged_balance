@@ -18,7 +18,6 @@
 #include <rm_legged_balance_control/LeggedBalanceInterface.h>
 
 #include "rm_legged_balance_control_ros/LeggedBalanceVisualization.h"
-#include "rm_legged_balance_control_ros/VMC.h"
 #include "rm_legged_balance_control_ros/vmc/leg_conv.h"
 #include "rm_legged_balance_control_ros/vmc/leg_pos.h"
 #include "rm_legged_balance_control_ros/vmc/leg_spd.h"
@@ -85,9 +84,6 @@ class LeggedBalanceController
   scalar_t roll_;
   control_toolbox::Pid pidLeftLeg_, pidRightLeg_, pidThetaDiff_, pidRoll_;
   ros::Publisher legLengthPublisher_, legPendulumSupportForce_;
-
-  // VMC
-  std::shared_ptr<VMC> vmc_;
 };
 
 }  // namespace rm
