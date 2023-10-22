@@ -11,8 +11,8 @@
 
 #include <geometry_msgs/Twist.h>
 #include <rm_msgs/ChassisCmd.h>
-#include <std_msgs/Float64.h>
 #include <ros/ros.h>
+#include <std_msgs/Float64.h>
 
 #include <tf2_ros/transform_listener.h>
 
@@ -48,6 +48,11 @@ class RosReferenceManager : public ocs2::ReferenceManagerDecorator {
   std::mutex legCmdMutex_;
   std::atomic_bool legCmdUpdated_;
   std_msgs::Float64 legCmd_;
+
+  ::ros::Subscriber rollCmdSubscriber_;
+  std::mutex rollCmdMutex_;
+  std::atomic_bool rollCmdUpdated_;
+  std_msgs::Float64 rollCmd_;
 
   std::shared_ptr<LeggedBalanceControlCmd> balanceControlCmdPtr_;
 

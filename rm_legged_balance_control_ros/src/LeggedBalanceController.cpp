@@ -383,13 +383,10 @@ void LeggedBalanceController::normal(const ros::Time& time, const ros::Duration&
   // clang-format on
   legLength << balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(0),
       balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(1);
-  F_roll = pidRoll_.computeCommand(0 - roll_, period);  // todo: dynamic roll angle
-  F_leg(0) = pidLeftLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() -
-                                            balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(0),
-                                        period);
-  F_leg(1) = pidLeftLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() -
-                                            balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(1),
-                                        period);
+  F_roll = pidRoll_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getRollCmd() - roll_, period);
+  scalar_t leg_ave = (legLength(0) + legLength(1)) / 2;
+  F_leg(0) = pidLeftLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() - leg_ave, period);
+  F_leg(1) = pidLeftLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() - leg_ave, period);
   F_gravity = (1. / 2 * params_.massBody_) * params_.g_;
   F_inertial = (1. / 2 * params_.massBody_) * (legLength(0) + legLength(1)) / 2 / (2 * params_.d_) * optimizedState(5) * optimizedState(9);
   // F_gravity = 0.5;
@@ -465,9 +462,8 @@ void LeggedBalanceController::sitDown(const ros::Time& time, const ros::Duration
   scalar_t F_roll;
   F_leg(0) = pidLeftLeg_.computeCommand(0.08 - balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(0), period);
   F_leg(1) = pidLeftLeg_.computeCommand(0.08 - balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(1), period);
-  F_roll = pidRoll_.computeCommand(0 - roll_, period);  // todo: dynamic roll angle
-  F_bl(0) = F_leg(0) + F_roll;
-  F_bl(1) = F_leg(1) - F_roll;
+  F_bl(0) = F_leg(0);
+  F_bl(1) = F_leg(1);
   std_msgs::Float64MultiArray legForce;
   legForce.data.push_back(F_bl(0));
   legForce.data.push_back(F_bl(1));
