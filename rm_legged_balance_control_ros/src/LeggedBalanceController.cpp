@@ -455,6 +455,37 @@ void LeggedBalanceController::block(const ros::Time& time, const ros::Duration& 
 }
 
 void LeggedBalanceController::sitDown(const ros::Time& time, const ros::Duration& period) {
+  vector_t jointPos(CONTROL_DIM), jointVel(CONTROL_DIM);
+  for (size_t i = 0; i < CONTROL_DIM; ++i) {
+    jointPos(i) = jointHandles_[i].getPosition();
+    jointVel(i) = jointHandles_[i].getVelocity();
+  }
+
+  ocs2::matrix_t F_bl(2, 1), F_leg(2, 1);
+  scalar_t F_roll;
+  F_leg(0) = pidLeftLeg_.computeCommand(0.08 - balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(0), period);
+  F_leg(1) = pidLeftLeg_.computeCommand(0.08 - balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(1), period);
+  F_roll = pidRoll_.computeCommand(0 - roll_, period);  // todo: dynamic roll angle
+  F_bl(0) = F_leg(0) + F_roll;
+  F_bl(1) = F_leg(1) - F_roll;
+  std_msgs::Float64MultiArray legForce;
+  legForce.data.push_back(F_bl(0));
+  legForce.data.push_back(F_bl(1));
+  legPendulumSupportForce_.publish(legForce);
+
+  scalar_t T_theta_diff = pidThetaDiff_.computeCommand(currentObservation_.state(1) - currentObservation_.state(2), period);
+  scalar_t left_T[2], right_T[2], left_angle[2], right_angle[2];
+  left_angle[0] = 3.49 + jointPos[4];  // [0]:back_vmc_joint [1]:front_vmc_joint
+  left_angle[1] = jointPos[2] + M_PI - 3.49;
+  right_angle[0] = 3.49 + jointPos[5];
+  right_angle[1] = jointPos[3] + M_PI - 3.49;
+  leg_conv(F_bl(0), -T_theta_diff, left_angle[0], left_angle[1], left_T);
+  leg_conv(F_bl(1), +T_theta_diff, right_angle[0], right_angle[1], right_T);
+  jointHandles_[2].setCommand(left_T[1]);
+  jointHandles_[3].setCommand(right_T[1]);
+  jointHandles_[4].setCommand(left_T[0]);
+  jointHandles_[5].setCommand(right_T[0]);
+
   scalar_t wheelSpeed = balanceInterface_->getLeggedBalanceControlCmd()->getForwardVel() / params_.r_;
   scalar_t followSpeed =
       pidFollow_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getYawError(), period) * params_.d_ / 2 / params_.r_;
