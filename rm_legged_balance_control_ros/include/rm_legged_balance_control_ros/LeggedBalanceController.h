@@ -27,6 +27,8 @@ namespace rm {
 class LeggedBalanceController
     : public controller_interface::MultiInterfaceController<rm_control::RobotStateInterface, hardware_interface::EffortJointInterface,
                                                             hardware_interface::ImuSensorInterface> {
+  enum BalanceState { NORMAL, BLOCK, SIT_DOWN, OFF_GROUND };
+
  public:
   LeggedBalanceController() = default;
   ~LeggedBalanceController() override;
@@ -64,6 +66,7 @@ class LeggedBalanceController
   ros::Publisher observationPublisher_;
 
  private:
+  int balanceState_;
   std::thread mpcThread_;
   std::atomic_bool controllerRunning_{}, mpcRunning_{};
   ocs2::benchmark::RepeatedTimer mpcTimer_;
@@ -72,8 +75,9 @@ class LeggedBalanceController
   rm_common::TfRtBroadcaster tfRtBroadcaster_;
   geometry_msgs::TransformStamped odom2base_{};
 
-  // Block Protect:
-  bool blockState_{false}, blockStateChanged_{false}, maybeBlock_{false};
+  // Protect
+  scalar_t legProtectAngle_, legProtectLength_;
+  bool blockStateChanged_{false}, maybeBlock_{false};
   ros::Time maybeBlockTime_, lastBlockTime_;
 
   // Sit down

@@ -66,6 +66,12 @@ bool LeggedBalanceController::init(hardware_interface::RobotHW* robot_hw, ros::N
   // For sit-down
   ros::NodeHandle left = ros::NodeHandle(controller_nh, "left_wheel");
   ros::NodeHandle right = ros::NodeHandle(controller_nh, "right_wheel");
+
+  if (!controller_nh.getParam("leg_protect_angle", legProtectAngle_) || !controller_nh.getParam("leg_protect_length", legProtectLength_)) {
+    ROS_ERROR("Load param leg_protect fail, check the resist of leg_protect_length and leg_protect_length");
+    return false;
+  }
+
   if (!leftWheelController_.init(effortJointInterface, left) || !rightWheelController_.init(effortJointInterface, right)) {
     return false;
   }
@@ -103,11 +109,17 @@ void LeggedBalanceController::update(const ros::Time& time, const ros::Duration&
   // Update the current state of the system
   mpcMrtInterface_->setCurrentObservation(currentObservation_);
 
+  if (balanceInterface_->getLeggedBalanceControlCmd()->getSitDown()) {
+    balanceState_ = BalanceState::SIT_DOWN;
+  } else {
+    balanceState_ = BalanceState::NORMAL;
+  }
+
   /*todo: check block
   // Check block
   scalar_t blockAngle = 0.25, blockEffort = 1.5, blockVelocity = 3.0, blockDuration = 0.5;//todo: use param
 
-  if (!blockState_) {
+  if (!balanceState_ != BalanceState::BLOCK) {
     if (std::abs(currentObservation_.state(1)) > blockAngle &&
         (std::abs(jointHandles_[0].getEffort()) > blockEffort || std::abs(jointHandles_[1].getEffort()) > blockEffort) &&
         (std::abs(jointHandles_[0].getVelocity()) < blockVelocity || std::abs(jointHandles_[1].getVelocity()) < blockVelocity)) {
@@ -116,7 +128,7 @@ void LeggedBalanceController::update(const ros::Time& time, const ros::Duration&
         maybeBlock_ = true;
       }
       if ((time - maybeBlockTime_).toSec() >= blockDuration) {
-        blockState_ = true;
+        balanceState_ = BalanceState::BLOCK;
         blockStateChanged_ = true;
       }
     } else {
@@ -125,19 +137,21 @@ void LeggedBalanceController::update(const ros::Time& time, const ros::Duration&
   }
    */
 
+  if (abs(currentObservation_.state(1)) > legProtectAngle_ || abs(currentObservation_.state(2)) > legProtectAngle_) {
+    balanceState_ = BalanceState::SIT_DOWN;
+  }
   // Move joints
-  if (!blockState_) {
-    normal(time, period);
-  } else {
-    block(time, period);
+  switch (balanceState_) {
+    case BalanceState::NORMAL:
+      normal(time, period);
+      break;
+    case BalanceState::BLOCK:
+      block(time, period);
+      break;
+    case BalanceState::SIT_DOWN:
+      sitDown(time, period);
+      break;
   }
-
-  /*todo: check sit down
-  // Sit down
-  if (balanceInterface_->getLeggedBalanceControlCmd()->getSitDown()) {
-    sitDown(time, period);
-  }
-   */
 
   // Power limit
   /*
@@ -442,7 +456,7 @@ void LeggedBalanceController::block(const ros::Time& time, const ros::Duration& 
     lastBlockTime_ = time;
   }
   if ((time - lastBlockTime_).toSec() > antiBlockTime) {
-    blockState_ = false;
+    balanceState_ = BalanceState::NORMAL;
     blockStateChanged_ = true;
     ROS_INFO("[balance] Exit BLOCK");
   } else {
@@ -457,11 +471,20 @@ void LeggedBalanceController::sitDown(const ros::Time& time, const ros::Duration
     jointPos(i) = jointHandles_[i].getPosition();
     jointVel(i) = jointHandles_[i].getVelocity();
   }
+  // Load the latest MPC policy
+  mpcMrtInterface_->updatePolicy();
+
+  // Evaluate the current policy
+  vector_t optimizedState, optimizedInput;
+  size_t plannedMode = 0;  // The mode that is active at the time the policy is evaluated at.
+  mpcMrtInterface_->evaluatePolicy(currentObservation_.time, currentObservation_.state, optimizedState, optimizedInput, plannedMode);
 
   ocs2::matrix_t F_bl(2, 1), F_leg(2, 1);
   scalar_t F_roll;
-  F_leg(0) = pidLeftLeg_.computeCommand(0.08 - balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(0), period);
-  F_leg(1) = pidLeftLeg_.computeCommand(0.08 - balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(1), period);
+  F_leg(0) =
+      pidLeftLeg_.computeCommand(legProtectLength_ - balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(0), period);
+  F_leg(1) =
+      pidLeftLeg_.computeCommand(legProtectLength_ - balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(1), period);
   F_bl(0) = F_leg(0);
   F_bl(1) = F_leg(1);
   std_msgs::Float64MultiArray legForce;
@@ -475,8 +498,8 @@ void LeggedBalanceController::sitDown(const ros::Time& time, const ros::Duration
   left_angle[1] = jointPos[2] + M_PI - 3.49;
   right_angle[0] = 3.49 + jointPos[5];
   right_angle[1] = jointPos[3] + M_PI - 3.49;
-  leg_conv(F_bl(0), -T_theta_diff, left_angle[0], left_angle[1], left_T);
-  leg_conv(F_bl(1), +T_theta_diff, right_angle[0], right_angle[1], right_T);
+  leg_conv(F_bl(0), optimizedInput(0) - T_theta_diff, left_angle[0], left_angle[1], left_T);
+  leg_conv(F_bl(1), optimizedInput(1) + T_theta_diff, right_angle[0], right_angle[1], right_T);
   jointHandles_[2].setCommand(left_T[1]);
   jointHandles_[3].setCommand(right_T[1]);
   jointHandles_[4].setCommand(left_T[0]);
