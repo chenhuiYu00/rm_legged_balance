@@ -6,27 +6,26 @@
 
 namespace rm {
 // On the dynamic model of a two-wheeled inverted pendulum robot
-// State = [x, theta_l, theta_r, alpha,, psi, x_dot, theta_l_dot, theta_r_dot, alpha_dot, psi_dot]^T
-// Input = [tau_l, tau_r,tau_l_l,tau_l_r]^T
+// State = [x, theta_l, theta_r, alpha, psi, x_dot, theta_l_dot, theta_r_dot, alpha_dot, psi_dot]^T
+// Input = [tau_l_l, tau_l_r, tau_l, tau_r]^T
 ad_vector_t LeggedBalanceSystemDynamics::systemFlowMap(ad_scalar_t /*time*/, const ad_vector_t& state, const ad_vector_t& input,
                                                        const ad_vector_t& parameters) const {
   // todo: add linear equation
   ad_scalar_t theta_l = state(1), theta_r = state(2), theta = state(3), psi = state(4), x_dot = state(5), theta_l_dot = state(6),
               theta_r_dot = state(7), theta_dot = state(8), psi_dot = state(9);
 
-  ad_matrix_t A = generateA(parameters(0), parameters(1)), B = generateB(parameters(0), parameters(1));
+  ad_matrix_t A = generateA(parameters(0), parameters(0)), B = generateB(parameters(0), parameters(0));
 
-  ad_vector_t result(6);
+  ad_vector_t result(10);
   result = A * state + B * input;
 
   return result;
 }
 
 vector_t LeggedBalanceSystemDynamics::getFlowMapParameters(scalar_t /*time*/, const PreComputation& /* preComputation */) const {
-  vector_t v(2);
+  vector_t v(1);
   // Left pendulum length # Right pendulum length
   v[0] = balanceControlCmdPtr_->getLegCmd();
-  v[1] = balanceControlCmdPtr_->getLegCmd();
   return v;
 }
 
