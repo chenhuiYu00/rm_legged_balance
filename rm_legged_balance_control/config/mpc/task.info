@@ -103,7 +103,7 @@ R
 Dynamics
 {
   d                     0.419       ; [m]
-  l_c                   0.03        ; [m]
+  l_c                   0.003       ; [m]  ; The param is error in dynamic model, the real param is 0.003!
   r                     0.125       ; [m]
   massBody              13.14       ; [kg]
   massLeg               0.56       ; [kg]
