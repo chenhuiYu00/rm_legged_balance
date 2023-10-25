@@ -264,9 +264,9 @@ void LeggedBalanceController::updateStateEstimation(const ros::Time& time, const
 
 void LeggedBalanceController::starting(const ros::Time& time) {
   updateStateEstimation(time, ros::Duration(0.001));
-  //  currentObservation_.state(1) = 0;  // Why is this needed?
-  //  currentObservation_.state(2) = 0;
-  //  currentObservation_.state(3) = 0;
+  currentObservation_.state(1) = 0;  // Why is this needed?
+  currentObservation_.state(2) = 0;
+  currentObservation_.state(3) = 0;
   currentObservation_.input.setZero(INPUT_DIM);
 
   ocs2::TargetTrajectories targetTrajectories({currentObservation_.time}, {currentObservation_.state}, {currentObservation_.input});
