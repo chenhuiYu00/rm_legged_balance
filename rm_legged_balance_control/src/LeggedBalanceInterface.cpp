@@ -79,11 +79,9 @@ LeggedBalanceInterface::LeggedBalanceInterface(const std::string& taskFile, cons
   balanceControlCmdPtr_->setMaxPitch(max_pitch, 0.);
   problem_.stateInequalityConstraintPtr->add("pitchConstraint", std::make_unique<PitchConstraint>(balanceControlCmdPtr_));
   problem_.inequalityConstraintPtr->add("torqueConstraint", std::make_unique<TorqueConstraint>());
-  /* todo: add limits
   balanceControlCmdPtr_->setPowerLimit(power_limit);
   problem_.inequalityConstraintPtr->add("powerConstraint",
                                         std::make_unique<PowerConstraintCppAd>(LeggedBalanceParameters(), balanceControlCmdPtr_));
-                                        */
 }
 
 }  // namespace rm

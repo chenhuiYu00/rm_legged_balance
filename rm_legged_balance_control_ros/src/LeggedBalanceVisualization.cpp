@@ -66,9 +66,9 @@ void LeggedBalanceVisualization::update(const ocs2::SystemObservation& observati
 
   scalar_t wheel_left_speed = observation.state(5) / param_.r_ - observation.state(6) - observation.state(9) * param_.d_ / 2 / param_.r_;
   scalar_t wheel_right_speed = observation.state(5) / param_.r_ - observation.state(7) + observation.state(9) * param_.d_ / 2 / param_.r_;
-  scalar_t power = abs(input(0) * wheel_left_speed) + param_.powerCoeffEffort_ * input(0) * input(0) +
-                   param_.powerCoeffVel_ * wheel_left_speed * wheel_left_speed + abs(input(1) * wheel_right_speed) +
-                   param_.powerCoeffEffort_ * input(1) * input(1) + param_.powerCoeffVel_ * wheel_right_speed * wheel_right_speed +
+  scalar_t power = abs(input(2) * wheel_left_speed) + param_.powerCoeffEffort_ * input(2) * input(2) +
+                   param_.powerCoeffVel_ * wheel_left_speed * wheel_left_speed + abs(input(3) * wheel_right_speed) +
+                   param_.powerCoeffEffort_ * input(3) * input(3) + param_.powerCoeffVel_ * wheel_right_speed * wheel_right_speed +
                    param_.powerOffset_;
   //  scalar_t power = abs(input(0) * wheel_left_speed) + coeff_vel * wheel_left_speed * wheel_left_speed +
   //  abs(input(1) * wheel_right_speed) +
