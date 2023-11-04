@@ -38,6 +38,8 @@ class LeggedBalanceSystemDynamics final : public SystemDynamicsBaseAD {
                             const ad_vector_t& parameters) const override;
 
   void loadDynamicsParams(const std::string& filename);
+  ocs2::ad_matrix_t generateA(ad_scalar_t l_l, ad_scalar_t l_r) const;
+  ocs2::ad_matrix_t generateB(ad_scalar_t l_l, ad_scalar_t l_r) const;
 
  protected:
   // For dynamic pendulum length
@@ -45,8 +47,6 @@ class LeggedBalanceSystemDynamics final : public SystemDynamicsBaseAD {
   size_t getNumFlowMapParameters() const override { return 2; }
 
  private:
-  ocs2::ad_matrix_t generateA(ad_scalar_t l_l, ad_scalar_t l_r) const;
-  ocs2::ad_matrix_t generateB(ad_scalar_t l_l, ad_scalar_t l_r) const;
   LeggedBalanceParameters param_;
   std::shared_ptr<LeggedBalanceControlCmd> balanceControlCmdPtr_;
 };

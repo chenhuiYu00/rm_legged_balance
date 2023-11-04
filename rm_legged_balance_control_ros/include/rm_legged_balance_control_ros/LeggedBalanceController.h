@@ -10,6 +10,7 @@
 #include <hardware_interface/joint_command_interface.h>
 #include <rm_common/hardware_interface/robot_state_interface.h>
 #include <rm_common/tf_rt_broadcaster.h>
+#include <std_msgs/Bool.h>
 #include <std_msgs/Float64MultiArray.h>
 
 #include <ocs2_core/misc/Benchmark.h>
@@ -76,7 +77,7 @@ class LeggedBalanceController
   geometry_msgs::TransformStamped odom2base_{};
 
   // Protect
-  scalar_t legProtectAngle_, legProtectLength_;
+  scalar_t legProtectAngle_, pitchProtectAngle_, rollProtectAngle_, legProtectLength_;
   bool blockStateChanged_{false}, maybeBlock_{false};
   ros::Time maybeBlockTime_, lastBlockTime_;
 
@@ -85,9 +86,15 @@ class LeggedBalanceController
   control_toolbox::Pid pidFollow_;
 
   // Leg control
-  scalar_t roll_;
+  void unstickDetection(const ros::Time& time, const ros::Duration& period, const scalar_t& leftLegDLength, const scalar_t& leftLegSupport,
+                        const scalar_t& leftLegTorque, const scalar_t& rightLegDLength, const scalar_t& rightLegSupport,
+                        const scalar_t& rightLegTorque, const scalar_t& ddz);
+  bool leftIsUnStick_, rightIsUnstick_;
+  scalar_t left_pos_[2], left_spd_[2], right_pos_[2], right_spd_[2];
+  scalar_t roll_, z_acc_, x_gyro_, groundSupportThreshold_;
   control_toolbox::Pid pidLeftLeg_, pidRightLeg_, pidThetaDiff_, pidRoll_;
-  ros::Publisher legLengthPublisher_, legPendulumSupportForce_;
+  ros::Publisher legLengthPublisher_, legPendulumSupportForcePublisher_, legGroundSupportForcePublisher_, leftUnStickPublisher_,
+      rightUnStickPublisher_;
 };
 
 }  // namespace rm
