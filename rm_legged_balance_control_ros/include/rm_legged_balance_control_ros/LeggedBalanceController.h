@@ -29,6 +29,7 @@ class LeggedBalanceController
     : public controller_interface::MultiInterfaceController<rm_control::RobotStateInterface, hardware_interface::EffortJointInterface,
                                                             hardware_interface::ImuSensorInterface> {
   enum BalanceState { NORMAL, BLOCK, SIT_DOWN, STOP };
+  enum JumpState { IDLE, LEG_RETRACTION, JUMP_UP, OFF_GROUND };
 
  public:
   LeggedBalanceController() = default;
@@ -85,6 +86,13 @@ class LeggedBalanceController
   // Sit down
   effort_controllers::JointVelocityController leftWheelController_, rightWheelController_;
   control_toolbox::Pid pidFollow_;
+
+  // Jump
+  void jumpTimerCallback();
+  int jumpState_ = JumpState::IDLE;
+  ros::Time lastJumpTime_;
+  ros::Timer jumpTimer_;
+  scalar_t jumpOverTime_, p1_, p2_, p3_, p4_;
 
   // Leg control
   void unstickDetection(const ros::Time& time, const ros::Duration& period, const scalar_t& leftLegDLength, const scalar_t& leftLegSupport,

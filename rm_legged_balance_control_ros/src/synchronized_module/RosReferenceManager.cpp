@@ -108,6 +108,12 @@ void RosReferenceManager::preSolverRun(ocs2::scalar_t initTime, ocs2::scalar_t f
     balanceControlCmdPtr_->setRollCmd(rollCmd_.data);
   }
 
+  if (jumpCmdUpdated_) {
+    std::lock_guard<std::mutex> lock(jumpCmdMutex_);
+    jumpCmdUpdated_ = false;
+    balanceControlCmdPtr_->setJump(jumpCmd_.data);
+  }
+
   referenceManagerPtr_->preSolverRun(initTime, finalTime, initState);
 }
 
@@ -143,6 +149,14 @@ void RosReferenceManager::subscribe(ros::NodeHandle& nodeHandle) {
     rollCmd_ = *msg;
   };
   rollCmdSubscriber_ = nodeHandle.subscribe<std_msgs::Float64>("roll_command", 1, rollCmdCallback);
+
+  // Robot jump command
+  auto jumpCmdCallback = [this](const std_msgs::BoolConstPtr& msg) {
+    std::lock_guard<std::mutex> lock(jumpCmdMutex_);
+    jumpCmdUpdated_ = true;
+    jumpCmd_ = *msg;
+  };
+  jumpCmdSubscriber_ = nodeHandle.subscribe<std_msgs::Bool>("jump_command", 1, jumpCmdCallback);
 }
 
 bool RosReferenceManager::tfVel(std::string from, std::string to, geometry_msgs::Vector3& vel) {

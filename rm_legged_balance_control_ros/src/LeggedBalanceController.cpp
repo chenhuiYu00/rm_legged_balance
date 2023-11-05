@@ -77,6 +77,12 @@ bool LeggedBalanceController::init(hardware_interface::RobotHW* robot_hw, ros::N
     return false;
   }
 
+  if (!controller_nh.getParam("jump_over_time", jumpOverTime_) || !controller_nh.getParam("p1", p1_) ||
+      !controller_nh.getParam("p2", p2_) || !controller_nh.getParam("p3", p3_) || !controller_nh.getParam("p4", p4_)) {
+    ROS_ERROR("Load param fail, check the resist of jump_over_time, p1, p2, p3, p4");
+    return false;
+  }
+
   if (!controller_nh.getParam("ground_support_threshold", groundSupportThreshold_)) {
     ROS_ERROR("Load param fail, check the resist of ground_support_threshold");
     return false;
@@ -110,6 +116,11 @@ bool LeggedBalanceController::init(hardware_interface::RobotHW* robot_hw, ros::N
       return false;
     }
   }
+
+  // Jump timer callback
+  jumpTimer_ =
+      controller_nh.createTimer(ros::Duration(jumpOverTime_), std::bind(&LeggedBalanceController::jumpTimerCallback, this), true, false);
+
   return true;
 }
 
@@ -462,6 +473,10 @@ void LeggedBalanceController::updateTfOdom(const ros::Time& time, const ros::Dur
   tfRtBroadcaster_.sendTransform(odom2base_);
 }
 
+void LeggedBalanceController::jumpTimerCallback() {
+  jumpState_ = IDLE;
+}
+
 void LeggedBalanceController::normal(const ros::Time& time, const ros::Duration& period) {
   if (blockStateChanged_) {
     ROS_INFO("[balance] Enter BLOCK");
@@ -483,9 +498,16 @@ void LeggedBalanceController::normal(const ros::Time& time, const ros::Duration&
 
   currentObservation_.input = optimizedInput;
 
+  // Check jump
+  if (jumpState_ == IDLE && balanceInterface_->getLeggedBalanceControlCmd()->getJump() &&
+      ros::Time::now() - lastJumpTime_ > ros::Duration(jumpOverTime_)) {
+    jumpState_ = JumpState::LEG_RETRACTION;
+    jumpTimer_.start();
+  }
+
   // Leg control
   ocs2::matrix_t F_bl(2, 1), J(2, 3), p(3, 1), F_leg(2, 1), legLength(2, 1);
-  scalar_t F_roll, F_gravity, F_inertial;
+  scalar_t F_roll(0), F_gravity(0), F_inertial(0);
   // clang-format off
   J << 1, 1, -1,
       -1, 1, 1;
@@ -494,18 +516,57 @@ void LeggedBalanceController::normal(const ros::Time& time, const ros::Duration&
       balanceInterface_->getLeggedBalanceControlCmd()->getPendulumLength()(1);
   F_roll = pidRoll_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getRollCmd() - roll_, period);
   scalar_t legAve = (legLength(0) + legLength(1)) / 2;
-  F_leg(0) = pidLeftLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() - legAve, period);
-  F_leg(1) = pidRightLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() - legAve, period);
-  F_gravity = (1. / 2 * params_.massBody_) * params_.g_;
-  F_inertial = (1. / 2 * params_.massBody_) * (legLength(0) + legLength(1)) / 2 / (2 * params_.d_) * optimizedState(5) * optimizedState(9);
-  // F_gravity = 0.5;
-  F_inertial = 0;
+
+  if (jumpState_ == JumpState::IDLE) {
+    F_leg(0) = pidLeftLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() - legAve, period);
+    F_leg(1) = pidRightLeg_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getLegCmd() - legAve, period);
+    F_gravity = (1. / 2 * params_.massBody_) * params_.g_;
+    //    F_inertial =
+    //        (1. / 2 * params_.massBody_) * (legLength(0) + legLength(1)) / 2 / (2 * params_.d_) * optimizedState(5) * optimizedState(9);
+    F_inertial = 0;
+  } else {
+    switch (jumpState_) {
+      case JumpState::LEG_RETRACTION:
+        F_leg(0) = pidLeftLeg_.computeCommand(0.1 - legLength(0), period);
+        F_leg(1) = pidRightLeg_.computeCommand(0.1 - legLength(1), period);
+        F_roll = pidRoll_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getRollCmd() - roll_, period);
+        F_gravity = (1. / 2 * params_.massBody_) * params_.g_;
+
+        if (legLength(0) < 0.12 && legLength(1) < 0.12) {
+          jumpState_ = JumpState::JUMP_UP;
+        }
+        break;
+      case JumpState::JUMP_UP:
+        F_leg(0) = p1_ * pow(legLength(0), 3) + p2_ * pow(legLength(0), 2) + p3_ * legLength(0) + p4_;
+        F_leg(1) = p1_ * pow(legLength(1), 3) + p2_ * pow(legLength(1), 2) + p3_ * legLength(1) + p4_;
+        F_roll = pidRoll_.computeCommand(balanceInterface_->getLeggedBalanceControlCmd()->getRollCmd() - roll_, period);
+        F_gravity = 0;
+
+        if (legLength(0) > 0.28 && legLength(1) > 0.28) {
+          jumpState_ = JumpState::OFF_GROUND;
+        }
+        break;
+      case JumpState::OFF_GROUND:
+        F_leg(0) = -(p1_ * pow(legLength(0), 3) + p2_ * pow(legLength(0), 2) + p3_ * legLength(0) + p4_);
+        F_leg(1) = -(p1_ * pow(legLength(1), 3) + p2_ * pow(legLength(1), 2) + p3_ * legLength(1) + p4_);
+        F_roll = 0;
+        F_gravity = 0;
+
+        if (legLength(0) < 0.12 && legLength(1) < 0.12) {
+          jumpState_ = JumpState::IDLE;
+          jumpTimer_.stop();
+          lastJumpTime_ = ros::Time::now();
+        }
+        break;
+    }
+  }
+
   p << F_roll, F_gravity, F_inertial;
   F_bl = J * p + F_leg;
-  if (leftIsUnStick_) {
+  if (leftIsUnStick_ && jumpState_ == JumpState::IDLE) {
     F_bl(0) = F_leg(0);
   }
-  if (rightIsUnstick_) {
+  if (rightIsUnstick_ && jumpState_ == JumpState::IDLE) {
     F_bl(1) = F_leg(1);
   }
 
