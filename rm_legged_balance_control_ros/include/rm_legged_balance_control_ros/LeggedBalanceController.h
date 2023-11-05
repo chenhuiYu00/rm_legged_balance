@@ -28,7 +28,7 @@ namespace rm {
 class LeggedBalanceController
     : public controller_interface::MultiInterfaceController<rm_control::RobotStateInterface, hardware_interface::EffortJointInterface,
                                                             hardware_interface::ImuSensorInterface> {
-  enum BalanceState { NORMAL, BLOCK, SIT_DOWN, OFF_GROUND };
+  enum BalanceState { NORMAL, BLOCK, SIT_DOWN, STOP };
 
  public:
   LeggedBalanceController() = default;
@@ -45,6 +45,7 @@ class LeggedBalanceController
   void normal(const ros::Time& time, const ros::Duration& period);
   void block(const ros::Time& time, const ros::Duration& period);
   void sitDown(const ros::Time& time, const ros::Duration& period);
+  void stop(const ros::Time& time, const ros::Duration& period);
   virtual void setupMpc(ros::NodeHandle& nh);
   virtual void setupMrt();
 
@@ -91,7 +92,7 @@ class LeggedBalanceController
                         const scalar_t& rightLegTorque, const scalar_t& ddz);
   bool leftIsUnStick_, rightIsUnstick_;
   scalar_t left_pos_[2], left_spd_[2], right_pos_[2], right_spd_[2];
-  scalar_t roll_, z_acc_, x_gyro_, groundSupportThreshold_;
+  scalar_t roll_, z_acc_, groundSupportThreshold_;
   control_toolbox::Pid pidLeftLeg_, pidRightLeg_, pidThetaDiff_, pidRoll_;
   ros::Publisher legLengthPublisher_, legPendulumSupportForcePublisher_, legGroundSupportForcePublisher_, leftUnStickPublisher_,
       rightUnStickPublisher_;

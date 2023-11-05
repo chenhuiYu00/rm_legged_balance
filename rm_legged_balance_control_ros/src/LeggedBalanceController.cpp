@@ -147,10 +147,12 @@ void LeggedBalanceController::update(const ros::Time& time, const ros::Duration&
   }
    */
 
-  if (abs(currentObservation_.state(1)) > legProtectAngle_ || abs(currentObservation_.state(2)) > legProtectAngle_ ||
-      abs(currentObservation_.state(3)) > pitchProtectAngle_ || abs(x_gyro_) > rollProtectAngle_) {
+  if (abs(currentObservation_.state(1)) > legProtectAngle_ || abs(currentObservation_.state(2)) > legProtectAngle_) {
     balanceState_ = BalanceState::SIT_DOWN;
+  } else if (abs(currentObservation_.state(3)) > pitchProtectAngle_ || abs(roll_) > rollProtectAngle_) {
+    balanceState_ = BalanceState::STOP;
   }
+
   // Move joints
   switch (balanceState_) {
     case BalanceState::NORMAL:
@@ -161,6 +163,9 @@ void LeggedBalanceController::update(const ros::Time& time, const ros::Duration&
       break;
     case BalanceState::SIT_DOWN:
       sitDown(time, period);
+      break;
+    case BalanceState::STOP:
+      stop(time, period);
       break;
   }
 
@@ -209,7 +214,6 @@ void LeggedBalanceController::updateStateEstimation(const ros::Time& time, const
     tf2::doTransform(gyro, gyro, robotStateHandle_.lookupTransform("base_link", imuSensorHandle_.getFrameId(), time));
     tf2::doTransform(acc, acc, robotStateHandle_.lookupTransform("base_link", imuSensorHandle_.getFrameId(), time));
     z_acc_ = acc.z;
-    x_gyro_ = gyro.x;
   } catch (tf2::TransformException& ex) {
     ROS_WARN("%s", ex.what());
     return;
@@ -612,6 +616,15 @@ void LeggedBalanceController::sitDown(const ros::Time& time, const ros::Duration
   rightWheelController_.setCommand(wheelSpeed + followSpeed);
   leftWheelController_.update(time, period);
   rightWheelController_.update(time, period);
+}
+
+void LeggedBalanceController::stop(const ros::Time& time, const ros::Duration& period) {
+  jointHandles_[0].setCommand(0);
+  jointHandles_[1].setCommand(0);
+  jointHandles_[2].setCommand(0);
+  jointHandles_[3].setCommand(0);
+  jointHandles_[4].setCommand(0);
+  jointHandles_[5].setCommand(0);
 }
 
 }  // namespace rm
